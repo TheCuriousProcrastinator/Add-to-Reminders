@@ -12,29 +12,40 @@ final class QuickAddPanelController {
 
     init() {
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 180),
-            styleMask: [.titled, .closable, .fullSizeContentView],
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 200),
+            styleMask: [.titled, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        panel.title = "QuickAdd"
+        panel.titleVisibility = .hidden
+        panel.titlebarAppearsTransparent = true
+        panel.titlebarSeparatorStyle = .none
         panel.isFloatingPanel = true
         panel.level = .floating
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+        panel.hidesOnDeactivate = true
         panel.isReleasedWhenClosed = false
         panel.contentView = NSHostingView(rootView: makeContentView())
     }
 
     func toggle() {
-        if panel.isVisible {
+        if isActivelyPresented {
             hide()
         } else {
-            panel.contentView = NSHostingView(rootView: makeContentView())
-            centerOnCurrentScreen()
-            observePanelBecomingKey()
-            NSApp.activate(ignoringOtherApps: true)
-            panel.makeKeyAndOrderFront(nil)
+            show()
         }
+    }
+
+    private var isActivelyPresented: Bool {
+        panel.isVisible && panel.isKeyWindow && NSApp.isActive
+    }
+
+    private func show() {
+        panel.contentView = NSHostingView(rootView: makeContentView())
+        centerOnCurrentScreen()
+        observePanelBecomingKey()
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
     }
 
     private func makeContentView() -> ContentView {
