@@ -15,6 +15,9 @@ struct ContentView: View {
 
     @State private var title = ""
     @State private var selectedListID = ""
+    @State private var dueDate = Date()
+    @State private var hasDueDate = false
+    @State private var hasDueTime = false
     @State private var lists: [EKCalendar] = []
     @State private var errorMessage: String?
     @State private var isLoadingLists = false
@@ -52,6 +55,40 @@ struct ContentView: View {
             .pickerStyle(.menu)
             .disabled(lists.isEmpty || isSaving)
 
+            HStack(spacing: 12) {
+                Picker("Due date", selection: $hasDueDate) {
+                    Text("No date").tag(false)
+                    Text("Date").tag(true)
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .disabled(isSaving)
+
+                if hasDueDate {
+                    DatePicker(
+                        "Due date",
+                        selection: $dueDate,
+                        displayedComponents: .date
+                    )
+                    .labelsHidden()
+                    .disabled(isSaving)
+
+                    Toggle("Time", isOn: $hasDueTime)
+                        .toggleStyle(.checkbox)
+                        .disabled(isSaving)
+
+                    if hasDueTime {
+                        DatePicker(
+                            "Due time",
+                            selection: $dueDate,
+                            displayedComponents: .hourAndMinute
+                        )
+                        .labelsHidden()
+                        .disabled(isSaving)
+                    }
+                }
+            }
+
             if let errorMessage {
                 Text(errorMessage)
                     .font(.caption)
@@ -74,6 +111,11 @@ struct ContentView: View {
         .onChange(of: selectedListID) { _, listID in
             guard !listID.isEmpty else { return }
             UserDefaults.standard.set(listID, forKey: lastUsedListKey)
+        }
+        .onChange(of: hasDueDate) { _, hasDueDate in
+            if !hasDueDate {
+                hasDueTime = false
+            }
         }
         .task {
             loadLists()
@@ -140,15 +182,36 @@ struct ContentView: View {
         let reminder = EKReminder(eventStore: eventStore)
         reminder.title = trimmedTitle
         reminder.calendar = list
+        reminder.dueDateComponents = dueDateComponents
 
         do {
             try eventStore.save(reminder, commit: true)
             title = ""
+            dueDate = Date()
+            hasDueDate = false
+            hasDueTime = false
             onSubmit()
         } catch {
             isSaving = false
             errorMessage = "Could not save reminder: \(error.localizedDescription)"
         }
+    }
+
+    private var dueDateComponents: DateComponents? {
+        guard hasDueDate else { return nil }
+
+        let calendar = Calendar.current
+        let components: Set<Calendar.Component> = hasDueTime
+            ? [.year, .month, .day, .hour, .minute]
+            : [.year, .month, .day]
+        var dueDateComponents = calendar.dateComponents(components, from: dueDate)
+        dueDateComponents.calendar = calendar
+
+        if hasDueTime {
+            dueDateComponents.timeZone = .current
+        }
+
+        return dueDateComponents
     }
 }
 
