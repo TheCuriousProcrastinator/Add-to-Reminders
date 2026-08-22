@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Private extension signing material
+private/
+
+# Native helper build products
+mac-helper/bin/
+mac-helper/*.o
+
+# Temporary backups
+*.before-*
+*.before-*
+
+# ReminderKit / SQLite probes
+mac-helper/rk-*
+mac-helper/*.dSYM/
+
+# Temporary probe projects
+fda-probe/

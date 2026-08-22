@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.alex.addtoreminders.host</string>
+
+    <key>CFBundleName</key>
+    <string>Add to Reminders</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>0.1</string>
+
+    <key>NSRemindersFullAccessUsageDescription</key>
+    <string>Add Website to Reminders needs access to your reminder lists so you can choose a list and create reminders from Chrome.</string>
+</dict>
+</plist>

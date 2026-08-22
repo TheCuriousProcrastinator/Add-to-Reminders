@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Add Website to Reminders",
+  "version": "0.1.0",
+  "description": "Add the current website to Apple Reminders.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "nativeMessaging",
+    "contextMenus"
+  ],
+  "action": {
+    "default_title": "Add to Reminders",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "mac": "Alt+Shift+R"
+      },
+      "description": "Add current website to Reminders"
+    }
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyFBpsxUsIvoZN5hNeHCg80jbTjU/PtrqrHDvmhOluC0wgVOVYFPyjUZp4nvDbpSJTD671VE6aTiV5yO1FnvPUYDKVvApRPlHxNGjvw18+YDBstXz+lo/lK/rkOTla7xKY70oWlbSGcgwMc5Qj8MSB70cQmHtHTGfrtE/cQKVTaN3eWlx5nrCKZgFfeVlerTVjs4rrNrgpkc7oksPN35CLsXjg0bhhx05xSF1I90lcsCwS/N1pzErq4081SCt7au064PRRCrjVDQlysgyRvKiy0WVab+p9DOvw2xh0VX0rq5VZ0rZ7ASzuoNysCjMiYMbZNqW7VqBEmfLFclLDnOMEwIDAQAB",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "minimum_chrome_version": "127"
+}

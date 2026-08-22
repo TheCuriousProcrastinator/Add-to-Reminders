@@ -1,0 +1,783 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+
+  <style>
+    :root {
+      color-scheme: light dark;
+
+      --bg: #f2f2f7;
+      --card: #ffffff;
+      --text: #1c1c1e;
+      --secondary: #8e8e93;
+      --separator: rgba(60, 60, 67, 0.16);
+      --accent: #007aff;
+      --accent-hover: #0a84ff;
+      --focus: rgba(0, 122, 255, 0.22);
+      --smart-bg: rgba(0, 122, 255, 0.13);
+      --error: #ff3b30;
+      --success: #34c759;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1e;
+        --card: #2c2c2e;
+        --text: #f5f5f7;
+        --secondary: #98989d;
+        --separator: rgba(84, 84, 88, 0.65);
+        --accent: #0a84ff;
+        --accent-hover: #409cff;
+        --focus: rgba(10, 132, 255, 0.28);
+        --smart-bg: rgba(10, 132, 255, 0.18);
+        --error: #ff453a;
+        --success: #30d158;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 380px;
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Text",
+        sans-serif;
+      font-size: 14px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 1px 2px 13px;
+    }
+
+    .header img {
+      width: 24px;
+      height: 24px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 650;
+      letter-spacing: -0.2px;
+    }
+
+    .reminder-card {
+      overflow: hidden;
+      background: var(--card);
+      border-radius: 13px;
+    }
+
+    .title-area {
+      padding: 15px 15px 11px;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    #titleShell {
+      position: relative;
+      width: 100%;
+      height: 27px;
+      overflow: hidden;
+    }
+
+    #titleMirror,
+    #title {
+      width: 100%;
+      height: 27px;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      font: inherit;
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 27px;
+      letter-spacing: 0;
+      white-space: pre;
+    }
+
+    #titleMirror {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      color: var(--text);
+      pointer-events: none;
+    }
+
+    #title {
+      position: relative;
+      z-index: 1;
+      background: transparent;
+      color: transparent;
+      caret-color: var(--text);
+    }
+
+    #title::selection {
+      background: var(--focus);
+    }
+
+    .smart-token {
+      color: var(--accent);
+      background: var(--smart-bg);
+      border-radius: 3px;
+      box-shadow: 0 0 0 2px var(--smart-bg);
+    }
+
+    #projectSuggestions {
+      margin-top: 9px;
+      overflow: hidden;
+      border: 1px solid var(--separator);
+      border-radius: 9px;
+      background: var(--card);
+    }
+
+    .project-suggestion {
+      width: 100%;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border: 0;
+      border-bottom: 1px solid var(--separator);
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .project-suggestion:last-child {
+      border-bottom: 0;
+    }
+
+    .project-suggestion:hover,
+    .project-suggestion.active {
+      background: var(--smart-bg);
+    }
+
+    .project-suggestion-slash {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    #url {
+      margin-top: 7px;
+      overflow: hidden;
+      color: var(--secondary);
+      font-size: 11px;
+      line-height: 15px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .separator {
+      height: 1px;
+      margin-left: 45px;
+      background: var(--separator);
+    }
+
+    .meta-row {
+      min-height: 49px;
+      display: grid;
+      grid-template-columns: 30px 52px minmax(0, 1fr);
+      align-items: center;
+      padding: 0 13px;
+    }
+
+    .row-icon {
+      display: flex;
+      align-items: center;
+    }
+
+    .list-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .calendar-icon {
+      position: relative;
+      width: 16px;
+      height: 15px;
+      border: 1.5px solid var(--secondary);
+      border-radius: 4px;
+    }
+
+    .calendar-icon::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      top: 4px;
+      height: 1px;
+      background: var(--secondary);
+    }
+
+    .calendar-icon::after {
+      content: "";
+      position: absolute;
+      width: 2px;
+      height: 3px;
+      left: 4px;
+      top: -3px;
+      border-radius: 1px;
+      background: var(--secondary);
+      box-shadow: 6px 0 0 var(--secondary);
+    }
+
+    .clock-icon {
+      position: relative;
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--secondary);
+      border-radius: 50%;
+    }
+
+    .clock-icon::before {
+      content: "";
+      position: absolute;
+      width: 1.5px;
+      height: 5px;
+      left: 6px;
+      top: 3px;
+      border-radius: 1px;
+      background: var(--secondary);
+    }
+
+    .clock-icon::after {
+      content: "";
+      position: absolute;
+      width: 4px;
+      height: 1.5px;
+      left: 6px;
+      top: 7px;
+      border-radius: 1px;
+      background: var(--secondary);
+      transform: rotate(25deg);
+      transform-origin: left center;
+    }
+
+    .row-label {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .select-wrap {
+      position: relative;
+      min-width: 0;
+    }
+
+    .select-wrap::after {
+      content: "";
+      position: absolute;
+      right: 2px;
+      top: 50%;
+      width: 7px;
+      height: 7px;
+      border-right: 1.5px solid var(--secondary);
+      border-bottom: 1.5px solid var(--secondary);
+      transform: translateY(-65%) rotate(45deg);
+      pointer-events: none;
+    }
+
+    select {
+      width: 100%;
+      height: 42px;
+      padding: 0 24px 0 0;
+      border: 0;
+      outline: 0;
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent;
+      color: var(--secondary);
+      font: inherit;
+      font-size: 13px;
+      text-align: right;
+      cursor: pointer;
+    }
+
+    select:focus {
+      color: var(--accent);
+    }
+
+    #customDateRow {
+      padding: 9px 13px 10px 45px;
+      border-top: 1px solid var(--separator);
+    }
+
+    #customDate {
+      width: 100%;
+      height: 36px;
+      padding: 0 9px;
+      border: 1px solid var(--separator);
+      border-radius: 8px;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+    }
+
+    #customDate:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--focus);
+    }
+
+    #timeWrap,
+    #repeatWrap {
+      display: grid;
+      grid-template-columns: 30px 52px minmax(0, 1fr);
+      align-items: center;
+      min-height: 49px;
+      padding: 0 13px;
+    }
+
+    #timeWrap label {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    #time {
+      width: 100%;
+      height: 38px;
+      padding: 0;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--secondary);
+      font: inherit;
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .repeat-icon {
+      color: var(--secondary);
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .repeat-value {
+      overflow: hidden;
+      color: var(--secondary);
+      font-size: 13px;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #imageRow {
+      min-height: 58px;
+      display: grid;
+      grid-template-columns:
+        44px 52px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0;
+      padding: 7px 13px;
+    }
+
+    .image-icon {
+      position: relative;
+      width: 16px;
+      height: 14px;
+      border: 1.5px solid var(--secondary);
+      border-radius: 3px;
+    }
+
+    .image-icon::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      bottom: 2px;
+      width: 10px;
+      height: 5px;
+      border-left: 1.5px solid var(--secondary);
+      border-bottom: 1.5px solid var(--secondary);
+      transform: skewX(-35deg);
+    }
+
+    .image-icon::after {
+      content: "";
+      position: absolute;
+      right: 2px;
+      top: 2px;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--secondary);
+    }
+
+    .image-thumbnail-wrap {
+      width: 36px;
+      height: 36px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--separator);
+      border-radius: 7px;
+      background: rgba(128, 128, 128, 0.12);
+    }
+
+    .image-thumbnail {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .image-thumbnail-fallback {
+      color: var(--secondary);
+      font-size: 19px;
+      line-height: 1;
+    }
+
+    #imageValue {
+      overflow: hidden;
+      color: var(--secondary);
+      font-size: 13px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-right: 10px;
+    }
+
+    .mini-button {
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 0 6px 10px;
+    }
+
+    .mini-button:hover {
+      text-decoration: underline;
+    }
+
+    .flag-icon {
+      position: relative;
+      width: 15px;
+      height: 16px;
+    }
+
+    .flag-icon::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 1px;
+      width: 1.5px;
+      height: 14px;
+      border-radius: 1px;
+      background: var(--secondary);
+    }
+
+    .flag-icon::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 2px;
+      width: 9px;
+      height: 7px;
+      border: 1.5px solid var(--secondary);
+      border-left: 0;
+      border-radius: 1px 3px 3px 1px;
+    }
+
+    .notes-icon {
+      position: relative;
+      width: 16px;
+      height: 14px;
+      border: 1.5px solid var(--secondary);
+      border-radius: 3px;
+    }
+
+    .notes-icon::before {
+      content: "";
+      position: absolute;
+      left: 3px;
+      right: 3px;
+      top: 4px;
+      height: 1px;
+      background: var(--secondary);
+      box-shadow: 0 4px 0 var(--secondary);
+    }
+
+    #notesRow {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 0;
+      padding: 11px 13px 12px;
+    }
+
+    #notes {
+      width: 100%;
+      min-height: 48px;
+      max-height: 110px;
+      resize: vertical;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    #notes::placeholder {
+      color: var(--secondary);
+    }
+
+    #status {
+      min-height: 15px;
+      margin: 9px 4px 0;
+      color: var(--secondary);
+      font-size: 11px;
+      line-height: 15px;
+    }
+
+    #status.error {
+      color: var(--error);
+    }
+
+    #status.success {
+      color: var(--success);
+    }
+
+    #add {
+      width: 100%;
+      height: 42px;
+      margin-top: 11px;
+      border: 0;
+      border-radius: 11px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    #add:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    #add:active:not(:disabled) {
+      transform: scale(0.985);
+    }
+
+    #add:disabled {
+      opacity: 0.42;
+      cursor: default;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <form id="form">
+
+    <div class="header">
+      <img src="icons/icon32.png" alt="">
+      <h1>Add to Reminders</h1>
+    </div>
+
+    <div class="reminder-card">
+
+      <div class="title-area">
+        <label class="visually-hidden" for="title">Title</label>
+
+        <div id="titleShell">
+          <div id="titleMirror" aria-hidden="true"></div>
+
+          <input
+            id="title"
+            type="text"
+            autocomplete="off"
+          >
+        </div>
+
+        <div
+          id="projectSuggestions"
+          role="listbox"
+          hidden
+        ></div>
+
+        <div id="url"></div>
+      </div>
+
+      <div id="imageSeparator" class="separator" hidden></div>
+
+      <div id="imageRow" hidden>
+        <div
+          id="imageThumbnailWrap"
+          class="image-thumbnail-wrap"
+        >
+          <img
+            id="imageThumbnail"
+            class="image-thumbnail"
+            alt=""
+          >
+          <span
+            id="imageThumbnailFallback"
+            class="image-thumbnail-fallback"
+            hidden
+          >
+            ▧
+          </span>
+        </div>
+
+        <div class="row-label">Image</div>
+
+        <div id="imageValue"></div>
+
+        <button
+          id="removeImage"
+          type="button"
+          class="mini-button"
+        >
+          Remove
+        </button>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="meta-row">
+        <div class="row-icon">
+          <span class="list-dot"></span>
+        </div>
+
+        <div class="row-label">List</div>
+
+        <div class="select-wrap">
+          <select id="list" disabled>
+            <option>Loading…</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="meta-row">
+        <div class="row-icon">
+          <span class="calendar-icon"></span>
+        </div>
+
+        <div class="row-label">Date</div>
+
+        <div class="select-wrap">
+          <select id="due">
+            <option value="none">No date</option>
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+            <option value="weekend">Weekend</option>
+            <option value="nextweek">Next week</option>
+            <option value="custom">Pick date…</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="customDateRow" hidden>
+        <input id="customDate" type="date">
+      </div>
+
+      <div id="timeSeparator" class="separator" hidden></div>
+
+      <div id="timeWrap" hidden>
+        <div class="row-icon">
+          <span class="clock-icon"></span>
+        </div>
+
+        <label for="time">Time</label>
+
+        <input id="time" type="time">
+      </div>
+
+      <div id="repeatSeparator" class="separator" hidden></div>
+
+      <div id="repeatWrap" hidden>
+        <div class="row-icon">
+          <span class="repeat-icon">↻</span>
+        </div>
+
+        <div class="row-label">Repeat</div>
+
+        <div id="repeatValue" class="repeat-value"></div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="meta-row">
+        <div class="row-icon">
+          <span class="flag-icon"></span>
+        </div>
+
+        <div class="row-label">Priority</div>
+
+        <div class="select-wrap">
+          <select id="priority">
+            <option value="0">None</option>
+            <option value="1">High</option>
+            <option value="5">Medium</option>
+            <option value="9">Low</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div id="notesRow">
+        <div class="row-icon">
+          <span class="notes-icon"></span>
+        </div>
+
+        <textarea
+          id="notes"
+          placeholder="Add notes…"
+        ></textarea>
+      </div>
+
+    </div>
+
+    <div id="status"></div>
+
+    <button id="add" type="submit" disabled>
+      Add Reminder
+    </button>
+
+  </form>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

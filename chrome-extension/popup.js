@@ -1,0 +1,2057 @@
+import { parseSmartDate } from "./date-parser.js";
+
+import {
+  parseSmartProject,
+  findProjectFragment,
+  filterProjectSuggestions
+} from "./project-parser.js";
+
+import {
+  parseSmartPriority
+} from "./priority-parser.js";
+
+import {
+  parseSmartTags,
+  findTagFragment,
+  filterTagSuggestions
+} from "./tag-parser.js";
+
+const HOST_NAME = "com.alex.addtoreminders";
+
+const form = document.getElementById("form");
+const titleInput = document.getElementById("title");
+const titleMirror = document.getElementById("titleMirror");
+const urlElement = document.getElementById("url");
+
+
+const imageSeparator =
+  document.getElementById("imageSeparator");
+
+const imageRow =
+  document.getElementById("imageRow");
+
+const imageValue =
+  document.getElementById("imageValue");
+
+const imageThumbnailWrap =
+  document.getElementById("imageThumbnailWrap");
+
+const imageThumbnail =
+  document.getElementById("imageThumbnail");
+
+const imageThumbnailFallback =
+  document.getElementById("imageThumbnailFallback");
+
+const removeImageButton =
+  document.getElementById("removeImage");
+
+const projectSuggestions =
+  document.getElementById("projectSuggestions");
+
+const listSelect = document.getElementById("list");
+const dueSelect = document.getElementById("due");
+
+const customDateRow =
+  document.getElementById("customDateRow");
+
+const customDateInput =
+  document.getElementById("customDate");
+
+const timeSeparator =
+  document.getElementById("timeSeparator");
+
+const timeWrap =
+  document.getElementById("timeWrap");
+
+const timeInput =
+  document.getElementById("time");
+
+const repeatSeparator =
+  document.getElementById("repeatSeparator");
+
+const repeatWrap =
+  document.getElementById("repeatWrap");
+
+const repeatValue =
+  document.getElementById("repeatValue");
+
+const prioritySelect =
+  document.getElementById("priority");
+
+const notesInput =
+  document.getElementById("notes");
+
+const addButton =
+  document.getElementById("add");
+
+const statusElement =
+  document.getElementById("status");
+
+let currentUrl = "";
+
+let currentImageUrl = "";
+let currentImageName = "";
+
+let pageIsValid = false;
+let listsLoaded = false;
+
+let smartDateActive = false;
+let dueBeforeSmartDate = null;
+let customDateBeforeSmartDate = "";
+let timeBeforeSmartDate = "";
+let smartResolvedDate = null;
+
+let availableLists = [];
+
+let smartProjectActive = false;
+let listBeforeSmartProject = null;
+
+let visibleProjectSuggestions = [];
+let projectSuggestionIndex = -1;
+
+let knownTags = [];
+
+// Tags explicitly approved with the
+// + Create button in this popup.
+let approvedNewTags =
+  new Map();
+
+
+function tagKey(name) {
+  return String(name)
+    .trim()
+    .toLocaleLowerCase();
+}
+
+function findKnownTag(name) {
+  const key =
+    tagKey(name);
+
+  return knownTags.find(
+    tag =>
+      tagKey(tag) === key
+  ) || null;
+}
+
+function isCommittedTag(name) {
+  const key =
+    tagKey(name);
+
+  return Boolean(
+    findKnownTag(name) ||
+    approvedNewTags.has(key)
+  );
+}
+
+function canonicalCommittedTag(name) {
+  const existing =
+    findKnownTag(name);
+
+  if (existing) {
+    return existing;
+  }
+
+  return (
+    approvedNewTags.get(
+      tagKey(name)
+    ) ||
+    null
+  );
+}
+
+function getCommittedTags(text) {
+  const parsed =
+    parseSmartTags(text);
+
+  const result = [];
+  const seen = new Set();
+
+  for (const tag of parsed.tags) {
+    const canonical =
+      canonicalCommittedTag(tag);
+
+    if (!canonical) {
+      continue;
+    }
+
+    const key =
+      tagKey(canonical);
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push(canonical);
+  }
+
+  return result;
+}
+
+async function loadKnownTags() {
+  const stored =
+    await chrome.storage.local.get(
+      "knownReminderTags"
+    );
+
+  const cachedTags =
+    Array.isArray(
+      stored.knownReminderTags
+    )
+      ? stored.knownReminderTags
+      : [];
+
+  let sourceTags =
+    cachedTags;
+
+  try {
+    const response =
+      await sendNativeMessage({
+        action: "tags"
+      });
+
+    // Real Apple Reminders tags are authoritative
+    // whenever the native lookup succeeds.
+    if (
+      response?.ok &&
+      Array.isArray(response.tags)
+    ) {
+      sourceTags =
+        response.tags;
+    }
+
+  } catch {
+    // Keep the local cache as a fallback.
+  }
+
+  const unique =
+    new Map();
+
+  for (const tag of sourceTags) {
+    const name =
+      String(tag).trim();
+
+    if (!name) {
+      continue;
+    }
+
+    unique.set(
+      tagKey(name),
+      name
+    );
+  }
+
+  knownTags =
+    Array.from(
+      unique.values()
+    ).sort(
+      (a, b) =>
+        a.localeCompare(
+          b,
+          undefined,
+          { sensitivity: "base" }
+        )
+    );
+}
+
+async function rememberTags(tags) {
+  const combined =
+    new Map();
+
+  for (
+    const tag of [
+      ...knownTags,
+      ...tags
+    ]
+  ) {
+    const name =
+      String(tag).trim();
+
+    if (!name) {
+      continue;
+    }
+
+    combined.set(
+      tagKey(name),
+      name
+    );
+  }
+
+  knownTags =
+    Array.from(
+      combined.values()
+    ).sort(
+      (a, b) =>
+        a.localeCompare(
+          b,
+          undefined,
+          { sensitivity: "base" }
+        )
+    );
+
+  await chrome.storage.local.set({
+    knownReminderTags:
+      knownTags
+  });
+}
+
+function setStatus(message, type = "") {
+  statusElement.textContent = message;
+  statusElement.className = type;
+}
+
+function escapeHTML(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function filenameFromUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+
+    const part =
+      url.pathname
+        .split("/")
+        .filter(Boolean)
+        .pop();
+
+    return part
+      ? decodeURIComponent(part)
+      : "Image";
+
+  } catch {
+    return "Image";
+  }
+}
+
+function renderImageRow() {
+  const hasImage =
+    Boolean(currentImageUrl);
+
+  imageSeparator.hidden =
+    !hasImage;
+
+  imageRow.hidden =
+    !hasImage;
+
+  if (!hasImage) {
+    imageValue.textContent = "";
+    imageValue.title = "";
+
+    imageThumbnail.removeAttribute(
+      "src"
+    );
+
+    imageThumbnail.hidden = false;
+    imageThumbnailFallback.hidden = true;
+
+    return;
+  }
+
+  imageValue.textContent =
+    currentImageName ||
+    filenameFromUrl(
+      currentImageUrl
+    );
+
+  imageValue.title =
+    currentImageUrl;
+
+  imageThumbnail.hidden = false;
+  imageThumbnailFallback.hidden = true;
+
+  imageThumbnail.onload = () => {
+    imageThumbnail.hidden = false;
+    imageThumbnailFallback.hidden = true;
+  };
+
+  imageThumbnail.onerror = () => {
+    imageThumbnail.hidden = true;
+    imageThumbnailFallback.hidden = false;
+  };
+
+  imageThumbnail.src =
+    currentImageUrl;
+}
+
+function insertInboxSeparator() {
+  const oldSeparator =
+    listSelect.querySelector(
+      'option[data-inbox-separator="true"]'
+    );
+
+  if (oldSeparator) {
+    oldSeparator.remove();
+  }
+
+  const inboxOption =
+    Array.from(listSelect.options)
+      .find(
+        option =>
+          option.textContent
+            .trim()
+            .toLowerCase() === "inbox"
+      );
+
+  if (!inboxOption) {
+    return;
+  }
+
+  const separator =
+    document.createElement("option");
+
+  separator.disabled = true;
+  separator.value = "";
+  separator.textContent =
+    "────────────";
+
+  separator.dataset.inboxSeparator =
+    "true";
+
+  inboxOption.insertAdjacentElement(
+    "afterend",
+    separator
+  );
+}
+
+function sortReminderLists(lists) {
+  return [...lists].sort(
+    (a, b) => {
+      const aInbox =
+        a.title.toLowerCase() === "inbox";
+
+      const bInbox =
+        b.title.toLowerCase() === "inbox";
+
+      if (aInbox && !bInbox) {
+        return -1;
+      }
+
+      if (!aInbox && bInbox) {
+        return 1;
+      }
+
+      return a.title.localeCompare(
+        b.title,
+        undefined,
+        { sensitivity: "base" }
+      );
+    }
+  );
+}
+
+function currentReminderLists() {
+  if (availableLists.length) {
+    return availableLists;
+  }
+
+  return Array.from(listSelect.options)
+    .filter(option =>
+      option.value &&
+      !option.disabled
+    )
+    .map(option => ({
+      id: option.value,
+      title: option.textContent.trim()
+    }));
+}
+
+function renderTitleHighlight() {
+  const text = titleInput.value;
+
+  const dateParsed =
+    parseSmartDate(text);
+
+  const projectParsed =
+    parseSmartProject(
+      text,
+      currentReminderLists()
+    );
+
+  const priorityParsed =
+    parseSmartPriority(text);
+
+  const tagParsed =
+    parseSmartTags(text);
+
+  const tokens = [];
+
+  if (
+    dateParsed.matchedStart != null &&
+    dateParsed.matchedEnd != null
+  ) {
+    tokens.push({
+      start: dateParsed.matchedStart,
+      end: dateParsed.matchedEnd,
+      className: "smart-token"
+    });
+  }
+
+  if (
+    projectParsed?.matchedStart != null &&
+    projectParsed?.matchedEnd != null
+  ) {
+    tokens.push({
+      start: projectParsed.matchedStart,
+      end: projectParsed.matchedEnd,
+      className: "smart-token"
+    });
+  }
+
+  if (
+    priorityParsed?.matchedStart != null &&
+    priorityParsed?.matchedEnd != null
+  ) {
+    tokens.push({
+      start: priorityParsed.matchedStart,
+      end: priorityParsed.matchedEnd,
+      className: "smart-token"
+    });
+  }
+
+  for (
+    const tag of tagParsed.matches
+  ) {
+    if (!isCommittedTag(tag.tag)) {
+      continue;
+    }
+
+    tokens.push({
+      start: tag.matchedStart,
+      end: tag.matchedEnd,
+      className: "smart-token"
+    });
+  }
+
+  tokens.sort(
+    (a, b) => a.start - b.start
+  );
+
+  let position = 0;
+  let html = "";
+
+  for (const token of tokens) {
+    if (token.start < position) {
+      continue;
+    }
+
+    html += escapeHTML(
+      text.slice(position, token.start)
+    );
+
+    html +=
+      `<span class="${token.className}">` +
+      escapeHTML(
+        text.slice(token.start, token.end)
+      ) +
+      "</span>";
+
+    position = token.end;
+  }
+
+  html += escapeHTML(
+    text.slice(position)
+  );
+
+  titleMirror.innerHTML = html;
+  titleMirror.scrollLeft =
+    titleInput.scrollLeft;
+}
+
+function hideProjectSuggestions() {
+  projectSuggestions.hidden = true;
+  projectSuggestions.innerHTML = "";
+  visibleProjectSuggestions = [];
+  projectSuggestionIndex = -1;
+}
+
+function addListLocally(list) {
+  if (
+    !availableLists.some(
+      item => item.id === list.id
+    )
+  ) {
+    availableLists.push(list);
+
+    availableLists =
+      sortReminderLists(
+        availableLists
+      );
+  }
+
+  const exists =
+    Array.from(listSelect.options)
+      .some(
+        option =>
+          option.value === list.id
+      );
+
+  if (!exists) {
+    const option =
+      document.createElement("option");
+
+    option.value = list.id;
+    option.textContent = list.title;
+
+    listSelect.appendChild(option);
+
+    const options =
+      Array.from(listSelect.options)
+        .sort(
+          (a, b) =>
+            a.textContent.localeCompare(
+              b.textContent,
+              undefined,
+              { sensitivity: "base" }
+            )
+        );
+
+    for (const item of options) {
+      listSelect.appendChild(item);
+    }
+
+    insertInboxSeparator();
+  }
+}
+
+async function createReminderList(name) {
+  const response =
+    await sendNativeMessage({
+      action: "createList",
+      name
+    });
+
+  if (!response.ok) {
+    throw new Error(
+      response.error ||
+      "Could not create list."
+    );
+  }
+
+  const list = {
+    id: response.id,
+    title: response.title
+  };
+
+  addListLocally(list);
+
+  return list;
+}
+
+function renderProjectSuggestions() {
+  const caret =
+    titleInput.selectionStart ??
+    titleInput.value.length;
+
+  const tagFragment =
+    findTagFragment(
+      titleInput.value,
+      caret
+    );
+
+  if (tagFragment) {
+    const matches =
+      filterTagSuggestions(
+        tagFragment,
+        knownTags
+      );
+
+    const items =
+      matches.map(tag => ({
+        type: "tag",
+        tag
+      }));
+
+    const requestedName =
+      tagFragment.query.trim();
+
+    const exactExisting =
+      requestedName
+        ? findKnownTag(
+            requestedName
+          )
+        : null;
+
+    if (
+      requestedName &&
+      !exactExisting
+    ) {
+      items.push({
+        type: "createTag",
+        tag: requestedName
+      });
+    }
+
+    if (!items.length) {
+      hideProjectSuggestions();
+      return;
+    }
+
+    visibleProjectSuggestions =
+      items;
+
+    if (
+      projectSuggestionIndex < 0 ||
+      projectSuggestionIndex >=
+        items.length
+    ) {
+      projectSuggestionIndex = 0;
+    }
+
+    projectSuggestions.innerHTML = "";
+
+    items.forEach(
+      (item, index) => {
+        const button =
+          document.createElement(
+            "button"
+          );
+
+        button.type = "button";
+        button.className =
+          "project-suggestion";
+
+        if (
+          index ===
+          projectSuggestionIndex
+        ) {
+          button.classList.add(
+            "active"
+          );
+        }
+
+        const symbol =
+          document.createElement(
+            "span"
+          );
+
+        symbol.className =
+          "project-suggestion-slash";
+
+        const name =
+          document.createElement(
+            "span"
+          );
+
+        if (
+          item.type ===
+          "createTag"
+        ) {
+          symbol.textContent = "+";
+          name.textContent =
+            `Create "${item.tag}"`;
+
+        } else {
+          symbol.textContent = "#";
+          name.textContent =
+            item.tag;
+        }
+
+        button.append(
+          symbol,
+          name
+        );
+
+        button.addEventListener(
+          "mousedown",
+          event => {
+            event.preventDefault();
+          }
+        );
+
+        button.addEventListener(
+          "click",
+          async () => {
+            await chooseProjectSuggestion(
+              item
+            );
+          }
+        );
+
+        projectSuggestions.appendChild(
+          button
+        );
+      }
+    );
+
+    projectSuggestions.hidden =
+      false;
+
+    return;
+  }
+
+  const fragment =
+    findProjectFragment(
+      titleInput.value,
+      caret
+    );
+
+  if (!fragment) {
+    hideProjectSuggestions();
+    return;
+  }
+
+  const matches =
+    filterProjectSuggestions(
+      fragment,
+      currentReminderLists()
+    );
+
+  const items =
+    matches.map(list => ({
+      type: "list",
+      list
+    }));
+
+  const requestedName =
+    fragment.query.trim();
+
+  const exactExisting =
+    requestedName
+      ? currentReminderLists().some(
+          list =>
+            list.title
+              .trim()
+              .toLocaleLowerCase() ===
+            requestedName
+              .toLocaleLowerCase()
+        )
+      : false;
+
+  // Existing matches stay first.
+  // Creating the exact typed name is always
+  // available unless that exact list already exists.
+  if (
+    requestedName &&
+    !exactExisting
+  ) {
+    items.push({
+      type: "create",
+      name: requestedName
+    });
+  }
+
+  if (!items.length) {
+    hideProjectSuggestions();
+    return;
+  }
+
+  visibleProjectSuggestions = items;
+
+  if (
+    projectSuggestionIndex < 0 ||
+    projectSuggestionIndex >= items.length
+  ) {
+    projectSuggestionIndex = 0;
+  }
+
+  projectSuggestions.innerHTML = "";
+
+  items.forEach((item, index) => {
+    const button =
+      document.createElement("button");
+
+    button.type = "button";
+    button.className =
+      "project-suggestion";
+
+    if (
+      index === projectSuggestionIndex
+    ) {
+      button.classList.add("active");
+    }
+
+    const symbol =
+      document.createElement("span");
+
+    symbol.className =
+      "project-suggestion-slash";
+
+    const name =
+      document.createElement("span");
+
+    if (item.type === "create") {
+      symbol.textContent = "+";
+      name.textContent =
+        `Create "${item.name}"`;
+    } else {
+      symbol.textContent = "/";
+      name.textContent =
+        item.list.title;
+    }
+
+    button.append(
+      symbol,
+      name
+    );
+
+    button.addEventListener(
+      "mousedown",
+      event => {
+        event.preventDefault();
+      }
+    );
+
+    button.addEventListener(
+      "click",
+      async () => {
+        await chooseProjectSuggestion(
+          item
+        );
+      }
+    );
+
+    projectSuggestions.appendChild(
+      button
+    );
+  });
+
+  projectSuggestions.hidden = false;
+}
+
+async function chooseProjectSuggestion(item) {
+  if (
+    item.type === "tag" ||
+    item.type === "createTag"
+  ) {
+    const caret =
+      titleInput.selectionStart ??
+      titleInput.value.length;
+
+    const fragment =
+      findTagFragment(
+        titleInput.value,
+        caret
+      );
+
+    if (!fragment) {
+      return;
+    }
+
+    const name =
+      String(item.tag).trim();
+
+    if (!name) {
+      return;
+    }
+
+    if (
+      item.type ===
+      "createTag"
+    ) {
+      // Explicit mouse click is the
+      // approval to create this tag
+      // when Add Reminder is pressed.
+      approvedNewTags.set(
+        tagKey(name),
+        name
+      );
+    }
+
+    const before =
+      titleInput.value.slice(
+        0,
+        fragment.start
+      );
+
+    const after =
+      titleInput.value.slice(
+        fragment.end
+      );
+
+    const token =
+      `#${name}`;
+
+    const needsSpace =
+      after.length > 0 &&
+      !after.startsWith(" ");
+
+    titleInput.value =
+      before +
+      token +
+      (needsSpace ? " " : "") +
+      after;
+
+    const newCaret =
+      before.length +
+      token.length +
+      (needsSpace ? 1 : 0);
+
+    titleInput.focus();
+
+    titleInput.setSelectionRange(
+      newCaret,
+      newCaret
+    );
+
+    hideProjectSuggestions();
+    renderTitleHighlight();
+    updateAddButton();
+
+    return;
+  }
+
+  let list;
+
+  if (item.type === "create") {
+    try {
+      setStatus(
+        `Creating ${item.name}…`
+      );
+
+      list =
+        await createReminderList(
+          item.name
+        );
+
+      setStatus("");
+
+    } catch (error) {
+      setStatus(
+        `Could not create list: ${error.message}`,
+        "error"
+      );
+      return;
+    }
+
+  } else {
+    list = item.list;
+  }
+
+  const caret =
+    titleInput.selectionStart ??
+    titleInput.value.length;
+
+  const fragment =
+    findProjectFragment(
+      titleInput.value,
+      caret
+    );
+
+  if (!fragment) {
+    return;
+  }
+
+  const before =
+    titleInput.value.slice(
+      0,
+      fragment.start
+    );
+
+  const after =
+    titleInput.value.slice(
+      fragment.end
+    );
+
+  const token =
+    `/${list.title}`;
+
+  const needsSpace =
+    after.length > 0 &&
+    !after.startsWith(" ");
+
+  titleInput.value =
+    before +
+    token +
+    (needsSpace ? " " : "") +
+    after;
+
+  const newCaret =
+    before.length +
+    token.length +
+    (needsSpace ? 1 : 0);
+
+  titleInput.focus();
+
+  titleInput.setSelectionRange(
+    newCaret,
+    newCaret
+  );
+
+  hideProjectSuggestions();
+
+  applySmartProject();
+  applySmartDate();
+  applySmartPriority();
+
+  renderTitleHighlight();
+  updateAddButton();
+}
+
+function applySmartProject() {
+  const parsed =
+    parseSmartProject(
+      titleInput.value,
+      currentReminderLists()
+    );
+
+  if (!parsed) {
+    if (smartProjectActive) {
+      const stillExists =
+        currentReminderLists().some(
+          list =>
+            list.id ===
+            listBeforeSmartProject
+        );
+
+      if (
+        stillExists &&
+        listBeforeSmartProject
+      ) {
+        listSelect.value =
+          listBeforeSmartProject;
+      }
+
+      smartProjectActive = false;
+      listBeforeSmartProject = null;
+    }
+
+    return;
+  }
+
+  if (!smartProjectActive) {
+    listBeforeSmartProject =
+      listSelect.value;
+
+    smartProjectActive = true;
+  }
+
+  listSelect.value =
+    parsed.listId;
+}
+
+function applySmartPriority() {
+  const parsed =
+    parseSmartPriority(
+      titleInput.value
+    );
+
+  if (!parsed) {
+    return;
+  }
+
+  prioritySelect.value =
+    String(parsed.value);
+}
+
+function cleanTitleForSave(text) {
+  const dateParsed =
+    parseSmartDate(text);
+
+  const projectParsed =
+    parseSmartProject(
+      text,
+      currentReminderLists()
+    );
+
+  const priorityParsed =
+    parseSmartPriority(text);
+
+  const tagParsed =
+    parseSmartTags(text);
+
+  const ranges = [];
+
+  if (
+    dateParsed.matchedStart != null &&
+    dateParsed.matchedEnd != null
+  ) {
+    ranges.push([
+      dateParsed.matchedStart,
+      dateParsed.matchedEnd
+    ]);
+  }
+
+  if (
+    projectParsed?.matchedStart != null &&
+    projectParsed?.matchedEnd != null
+  ) {
+    ranges.push([
+      projectParsed.matchedStart,
+      projectParsed.matchedEnd
+    ]);
+  }
+
+  if (
+    priorityParsed?.matchedStart != null &&
+    priorityParsed?.matchedEnd != null
+  ) {
+    ranges.push([
+      priorityParsed.matchedStart,
+      priorityParsed.matchedEnd
+    ]);
+  }
+
+  for (
+    const tag of tagParsed.matches
+  ) {
+    if (!isCommittedTag(tag.tag)) {
+      continue;
+    }
+
+    ranges.push([
+      tag.matchedStart,
+      tag.matchedEnd
+    ]);
+  }
+
+  ranges.sort(
+    (a, b) => b[0] - a[0]
+  );
+
+  let result = text;
+
+  for (const [start, end] of ranges) {
+    result =
+      result.slice(0, start) +
+      result.slice(end);
+  }
+
+  return result
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function updateAddButton() {
+  addButton.disabled =
+    !pageIsValid ||
+    !listsLoaded ||
+    !titleInput.value.trim() ||
+    !listSelect.value;
+}
+
+function refreshDateTimeControls() {
+  const custom =
+    dueSelect.value === "custom";
+
+  const hasDate =
+    dueSelect.value !== "none";
+
+  customDateRow.hidden = !custom;
+
+  timeWrap.hidden = !hasDate;
+  timeSeparator.hidden = !hasDate;
+
+  if (!hasDate) {
+    timeInput.value = "";
+  }
+}
+
+function formatRepeatLabel(label) {
+  if (!label) {
+    return "";
+  }
+
+  return label.charAt(0).toUpperCase() +
+    label.slice(1);
+}
+
+function refreshRepeatRow(parsed) {
+  const recurrence =
+    parsed?.recurrence;
+
+  if (!recurrence) {
+    repeatSeparator.hidden = true;
+    repeatWrap.hidden = true;
+    repeatValue.textContent = "";
+    return;
+  }
+
+  repeatValue.textContent =
+    formatRepeatLabel(
+      recurrence.label ||
+      "Repeating"
+    );
+
+  repeatSeparator.hidden = false;
+  repeatWrap.hidden = false;
+}
+
+function sendNativeMessage(message) {
+  return new Promise(
+    (resolve, reject) => {
+      chrome.runtime.sendNativeMessage(
+        HOST_NAME,
+        message,
+        response => {
+          if (chrome.runtime.lastError) {
+            reject(
+              new Error(
+                chrome.runtime.lastError.message
+              )
+            );
+            return;
+          }
+
+          if (!response) {
+            reject(
+              new Error(
+                "No response from Mac helper."
+              )
+            );
+            return;
+          }
+
+          resolve(response);
+        }
+      );
+    }
+  );
+}
+
+async function consumePendingCapture() {
+  try {
+    const stored =
+      await chrome.storage.local.get(
+        "pendingReminderCapture"
+      );
+
+    const pending =
+      stored.pendingReminderCapture;
+
+    if (!pending) {
+      return null;
+    }
+
+    await chrome.storage.local.remove(
+      "pendingReminderCapture"
+    );
+
+    // Ignore stale captures.
+    if (
+      !pending.createdAt ||
+      Date.now() - pending.createdAt >
+        2 * 60 * 1000
+    ) {
+      return null;
+    }
+
+    return pending;
+
+  } catch {
+    return null;
+  }
+}
+
+async function loadCurrentPage() {
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true
+  });
+
+  const pending =
+    await consumePendingCapture();
+
+  if (!tab && !pending) {
+    setStatus(
+      "Could not read the current tab.",
+      "error"
+    );
+    return;
+  }
+
+  currentUrl =
+    pending?.url ||
+    tab?.url ||
+    "";
+
+  
+  currentImageUrl =
+    pending?.imageUrl ||
+    "";
+
+  currentImageName =
+    pending?.imageName ||
+    (
+      currentImageUrl
+        ? filenameFromUrl(
+            currentImageUrl
+          )
+        : ""
+    );
+
+pageIsValid =
+    currentUrl.startsWith("http://") ||
+    currentUrl.startsWith("https://");
+
+  titleInput.value =
+    pending?.title ||
+    tab?.title ||
+    "";
+
+  try {
+    const url =
+      new URL(currentUrl);
+
+    urlElement.textContent =
+      url.hostname.replace(
+        /^www\./,
+        ""
+      );
+
+    urlElement.title =
+      currentUrl;
+
+  } catch {
+    urlElement.textContent =
+      currentUrl;
+  }
+
+  renderImageRow();
+  renderTitleHighlight();
+
+  if (!pageIsValid) {
+    setStatus(
+      "This works on normal web pages only.",
+      "error"
+    );
+  }
+
+  titleInput.focus();
+  titleInput.select();
+
+  updateAddButton();
+}
+
+async function loadLists() {
+  try {
+    const response =
+      await sendNativeMessage({
+        action: "lists"
+      });
+
+    if (!response.ok) {
+      throw new Error(
+        response.error ||
+        "Could not load Reminders lists."
+      );
+    }
+
+    availableLists =
+      sortReminderLists(
+        response.lists || []
+      );
+
+    if (!availableLists.length) {
+      throw new Error(
+        "No Reminders lists found."
+      );
+    }
+
+    listSelect.innerHTML = "";
+
+    for (const list of availableLists) {
+      const option =
+        document.createElement(
+          "option"
+        );
+
+      option.value = list.id;
+      option.textContent =
+        list.title;
+
+      listSelect.appendChild(option);
+    }
+
+    const stored =
+      await chrome.storage.local.get(
+        "lastListId"
+      );
+
+    const remembered =
+      availableLists.some(
+        list =>
+          list.id ===
+          stored.lastListId
+      );
+
+    if (remembered) {
+      listSelect.value =
+        stored.lastListId;
+
+    } else {
+      const remindersList =
+        availableLists.find(
+          list =>
+            list.title ===
+            "Reminders"
+        );
+
+      if (remindersList) {
+        listSelect.value =
+          remindersList.id;
+      }
+    }
+
+    insertInboxSeparator();
+
+    listSelect.disabled = false;
+    listsLoaded = true;
+
+    applySmartProject();
+    renderTitleHighlight();
+
+    if (pageIsValid) {
+      setStatus("");
+    }
+
+    updateAddButton();
+
+  } catch (error) {
+    listSelect.innerHTML =
+      "<option>Mac helper unavailable</option>";
+
+    setStatus(
+      `Could not connect to Reminders: ${error.message}`,
+      "error"
+    );
+  }
+}
+
+function toISO(date) {
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatSmartDateLabel(iso) {
+  const [year, month, day] =
+    iso.split("-").map(Number);
+
+  const date =
+    new Date(
+      year,
+      month - 1,
+      day
+    );
+
+  const options = {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  };
+
+  if (
+    year !==
+    new Date().getFullYear()
+  ) {
+    options.year = "numeric";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-US",
+    options
+  ).format(date);
+}
+
+function setSmartDateOption(iso) {
+  let option =
+    dueSelect.querySelector(
+      'option[value="smart"]'
+    );
+
+  if (!option) {
+    option =
+      document.createElement(
+        "option"
+      );
+
+    option.value = "smart";
+    option.disabled = true;
+
+    const custom =
+      dueSelect.querySelector(
+        'option[value="custom"]'
+      );
+
+    dueSelect.insertBefore(
+      option,
+      custom
+    );
+  }
+
+  option.textContent =
+    formatSmartDateLabel(iso);
+
+  smartResolvedDate = iso;
+  dueSelect.value = "smart";
+}
+
+function clearSmartDateOption() {
+  const option =
+    dueSelect.querySelector(
+      'option[value="smart"]'
+    );
+
+  if (option) {
+    option.remove();
+  }
+
+  smartResolvedDate = null;
+}
+
+function applySmartDate() {
+  const parsed =
+    parseSmartDate(
+      titleInput.value
+    );
+
+  renderTitleHighlight();
+  refreshRepeatRow(parsed);
+
+  if (
+    !parsed.matchedText ||
+    !parsed.due
+  ) {
+    if (smartDateActive) {
+      clearSmartDateOption();
+
+      dueSelect.value =
+        dueBeforeSmartDate ||
+        "none";
+
+      customDateInput.value =
+        customDateBeforeSmartDate ||
+        "";
+
+      timeInput.value =
+        timeBeforeSmartDate ||
+        "";
+
+      smartDateActive = false;
+      dueBeforeSmartDate = null;
+      customDateBeforeSmartDate = "";
+      timeBeforeSmartDate = "";
+
+      refreshDateTimeControls();
+    }
+
+    return;
+  }
+
+  if (!smartDateActive) {
+    dueBeforeSmartDate =
+      dueSelect.value;
+
+    customDateBeforeSmartDate =
+      customDateInput.value;
+
+    timeBeforeSmartDate =
+      timeInput.value;
+
+    smartDateActive = true;
+  }
+
+  const today =
+    new Date();
+
+  today.setHours(
+    0, 0, 0, 0
+  );
+
+  const tomorrow =
+    new Date(today);
+
+  tomorrow.setDate(
+    tomorrow.getDate() + 1
+  );
+
+  if (
+    parsed.due ===
+    toISO(today)
+  ) {
+    clearSmartDateOption();
+
+    dueSelect.value =
+      "today";
+
+    customDateInput.value =
+      "";
+
+  } else if (
+    parsed.due ===
+    toISO(tomorrow)
+  ) {
+    clearSmartDateOption();
+
+    dueSelect.value =
+      "tomorrow";
+
+    customDateInput.value =
+      "";
+
+  } else {
+    setSmartDateOption(
+      parsed.due
+    );
+
+    customDateInput.value =
+      parsed.due;
+  }
+
+  timeInput.value =
+    parsed.time || "";
+
+  refreshDateTimeControls();
+}
+
+dueSelect.addEventListener(
+  "change",
+  () => {
+    smartDateActive = false;
+
+    if (
+      dueSelect.value !==
+      "smart"
+    ) {
+      clearSmartDateOption();
+    }
+
+    refreshDateTimeControls();
+
+    if (
+      dueSelect.value ===
+      "custom"
+    ) {
+      customDateInput.focus();
+    }
+  }
+);
+
+titleInput.addEventListener(
+  "input",
+  () => {
+    applySmartProject();
+    applySmartDate();
+    applySmartPriority();
+
+    renderProjectSuggestions();
+    renderTitleHighlight();
+
+    updateAddButton();
+  }
+);
+
+titleInput.addEventListener(
+  "keydown",
+  event => {
+    if (
+      projectSuggestions.hidden ||
+      !visibleProjectSuggestions.length
+    ) {
+      return;
+    }
+
+    if (
+      event.key ===
+      "ArrowDown"
+    ) {
+      event.preventDefault();
+
+      projectSuggestionIndex =
+        (
+          projectSuggestionIndex + 1
+        ) %
+        visibleProjectSuggestions.length;
+
+      renderProjectSuggestions();
+      return;
+    }
+
+    if (
+      event.key ===
+      "ArrowUp"
+    ) {
+      event.preventDefault();
+
+      projectSuggestionIndex =
+        projectSuggestionIndex <= 0
+          ? visibleProjectSuggestions.length - 1
+          : projectSuggestionIndex - 1;
+
+      renderProjectSuggestions();
+      return;
+    }
+
+    if (
+      event.key === "Enter" &&
+      projectSuggestionIndex >= 0
+    ) {
+      const selectedItem =
+        visibleProjectSuggestions[
+          projectSuggestionIndex
+        ];
+
+      // Creating a brand-new Reminders list
+      // always requires an explicit click.
+      if (
+        selectedItem?.type === "create" ||
+        selectedItem?.type === "createTag"
+      ) {
+        event.preventDefault();
+        return;
+      }
+
+      event.preventDefault();
+
+      chooseProjectSuggestion(
+        selectedItem
+      );
+
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      hideProjectSuggestions();
+    }
+  }
+);
+
+titleInput.addEventListener(
+  "scroll",
+  () => {
+    titleMirror.scrollLeft =
+      titleInput.scrollLeft;
+  }
+);
+
+titleInput.addEventListener(
+  "blur",
+  () => {
+    titleInput.scrollLeft = 0;
+    titleMirror.scrollLeft = 0;
+
+    setTimeout(
+      hideProjectSuggestions,
+      100
+    );
+  }
+);
+
+titleInput.addEventListener(
+  "focus",
+  () => {
+    requestAnimationFrame(() => {
+      titleMirror.scrollLeft =
+        titleInput.scrollLeft;
+    });
+  }
+);
+
+listSelect.addEventListener(
+  "change",
+  async () => {
+    const parsed =
+      parseSmartProject(
+        titleInput.value,
+        currentReminderLists()
+      );
+
+    if (
+      parsed &&
+      smartProjectActive
+    ) {
+      const selected =
+        currentReminderLists().find(
+          list =>
+            list.id ===
+            listSelect.value
+        );
+
+      if (selected) {
+        titleInput.value =
+          titleInput.value.slice(
+            0,
+            parsed.matchedStart
+          ) +
+          `/${selected.title}` +
+          titleInput.value.slice(
+            parsed.matchedEnd
+          );
+
+        renderTitleHighlight();
+      }
+    }
+
+    await chrome.storage.local.set({
+      lastListId:
+        listSelect.value
+    });
+  }
+);
+
+removeImageButton.addEventListener(
+  "click",
+  () => {
+    currentImageUrl = "";
+    currentImageName = "";
+    renderImageRow();
+  }
+);
+
+form.addEventListener(
+  "submit",
+  async event => {
+    event.preventDefault();
+
+    const parsed =
+      parseSmartDate(
+        titleInput.value
+      );
+
+    const committedTags =
+      getCommittedTags(
+        titleInput.value
+      );
+
+    const title =
+      cleanTitleForSave(
+        titleInput.value
+      );
+
+    if (
+      !title ||
+      !listSelect.value ||
+      !pageIsValid
+    ) {
+      return;
+    }
+
+    let due =
+      dueSelect.value;
+
+    if (due === "smart") {
+      due =
+        smartResolvedDate ||
+        parsed.due ||
+        "none";
+    }
+
+    if (due === "custom") {
+      if (!customDateInput.value) {
+        setStatus(
+          "Choose a date first.",
+          "error"
+        );
+
+        customDateInput.focus();
+        return;
+      }
+
+      due =
+        customDateInput.value;
+    }
+
+    const time =
+      due === "none"
+        ? ""
+        : timeInput.value;
+
+    addButton.disabled = true;
+    addButton.textContent =
+      "Adding…";
+
+    setStatus("");
+
+    try {
+      const response =
+        await sendNativeMessage({
+          action: "add",
+          title,
+          url: currentUrl,
+                    imageUrl: currentImageUrl,
+listId: listSelect.value,
+          due,
+          time,
+          recurrence:
+            parsed.recurrence,
+
+          priority:
+            Number(
+              prioritySelect.value
+            ),
+
+          notes:
+            notesInput.value.trim(),
+
+          tags:
+            committedTags
+        });
+
+      if (!response.ok) {
+        throw new Error(
+          response.error ||
+          "Could not create reminder."
+        );
+      }
+
+      await chrome.storage.local.set({
+        lastListId:
+          listSelect.value
+      });
+
+      await rememberTags(
+        committedTags
+      );
+
+      setStatus(
+        `Added to ${response.list}`,
+        "success"
+      );
+
+      addButton.textContent =
+        "Added ✓";
+
+      setTimeout(
+        () => window.close(),
+        650
+      );
+
+    } catch (error) {
+      setStatus(
+        `Could not add reminder: ${error.message}`,
+        "error"
+      );
+
+      addButton.textContent =
+        "Add Reminder";
+
+      updateAddButton();
+    }
+  }
+);
+
+async function init() {
+  await loadKnownTags();
+  await loadCurrentPage();
+  await loadLists();
+
+  refreshDateTimeControls();
+
+  applySmartProject();
+  applySmartDate();
+
+  renderTitleHighlight();
+
+  refreshRepeatRow(
+    parseSmartDate(
+      titleInput.value
+    )
+  );
+}
+
+init();
