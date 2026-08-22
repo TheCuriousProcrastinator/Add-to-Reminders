@@ -12,7 +12,7 @@ final class QuickAddPanelController {
 
     init() {
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 240),
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 280),
             styleMask: [.titled, .fullSizeContentView],
             backing: .buffered,
             defer: false

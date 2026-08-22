@@ -31,78 +31,89 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Quick Add")
-                .font(.headline)
+        ZStack(alignment: .top) {
+            Color(nsColor: .windowBackgroundColor)
+                .ignoresSafeArea()
 
-            TextField("Reminder title", text: $title)
-                .textFieldStyle(.roundedBorder)
-                .focused($titleFieldFocused)
-                .onSubmit {
-                    submitTitle()
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.blue)
+                        .font(.system(size: 20))
+
+                    Text("Add to Reminders")
+                        .font(.system(size: 17, weight: .semibold))
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 2)
 
-            Picker("List", selection: $selectedListID) {
-                if lists.isEmpty {
-                    Text(isLoadingLists ? "Loading…" : "No lists available")
-                        .tag("")
-                } else {
-                    ForEach(lists, id: \.calendarIdentifier) { list in
-                        Text(list.title).tag(list.calendarIdentifier)
+                VStack(alignment: .leading, spacing: 7) {
+                    TextField("Reminder title", text: $title)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 18, weight: .medium))
+                        .focused($titleFieldFocused)
+                        .onSubmit {
+                            submitTitle()
+                        }
+                        .padding(.horizontal, 15)
+                        .padding(.top, 11)
+
+                    HStack(spacing: 7) {
+                        dateControl
+
+                        if hasDueDate {
+                            timeControl
+                        }
                     }
+                    .padding(.horizontal, 15)
+                    .padding(.bottom, 11)
                 }
-            }
-            .pickerStyle(.menu)
-            .disabled(lists.isEmpty || isSaving)
+                .background(Color(nsColor: .controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
 
-            HStack(spacing: 12) {
-                Picker("Due date", selection: $hasDueDate) {
-                    Text("No date").tag(false)
-                    Text("Date").tag(true)
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
+                        .padding(.top, 1)
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .disabled(isSaving)
 
-                if hasDueDate {
-                    DatePicker(
-                        "Due date",
-                        selection: $dueDate,
-                        displayedComponents: .date
-                    )
-                    .labelsHidden()
-                    .disabled(isSaving)
+                HStack {
+                    HStack(spacing: 6) {
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.blue)
 
-                    Toggle("Time", isOn: $hasDueTime)
-                        .toggleStyle(.checkbox)
-                        .disabled(isSaving)
-
-                    if hasDueTime {
-                        DatePicker(
-                            "Due time",
-                            selection: $dueDate,
-                            displayedComponents: .hourAndMinute
-                        )
+                        Picker("List", selection: $selectedListID) {
+                            if lists.isEmpty {
+                                Text(isLoadingLists ? "Loading…" : "No lists available")
+                                    .tag("")
+                            } else {
+                                ForEach(lists, id: \.calendarIdentifier) { list in
+                                    Text(list.title).tag(list.calendarIdentifier)
+                                }
+                            }
+                        }
                         .labelsHidden()
-                        .disabled(isSaving)
+                        .pickerStyle(.menu)
+                        .disabled(lists.isEmpty || isSaving)
                     }
-                }
-            }
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-
-            HStack {
-                Spacer()
-                Text(isSaving ? "Saving…" : "Return to save  •  Esc to cancel")
-                    .font(.caption)
                     .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Button(isSaving ? "Adding…" : "Add Reminder", action: submitTitle)
+                        .buttonStyle(.borderedProminent)
+                        .tint(.blue)
+                        .disabled(isSaving || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedListID.isEmpty)
+                }
+                .padding(.horizontal, 2)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
-        .padding(22)
         .frame(width: 520)
         .onReceive(NotificationCenter.default.publisher(for: .quickAddTitleFocusRequested)) { _ in
             titleFieldFocused = true
@@ -197,6 +208,80 @@ struct ContentView: View {
         }
     }
 
+    @ViewBuilder
+    private var dateControl: some View {
+        if hasDueDate {
+            HStack(spacing: 4) {
+                Image(systemName: "calendar")
+                    .foregroundStyle(.secondary)
+
+                DatePicker(
+                    "Due date",
+                    selection: $dueDate,
+                    displayedComponents: .date
+                )
+                .labelsHidden()
+                .datePickerStyle(.field)
+
+                Button {
+                    hasDueDate = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+            }
+            .chipStyle()
+            .disabled(isSaving)
+        } else {
+            Button {
+                hasDueDate = true
+            } label: {
+                Label("Date", systemImage: "calendar")
+            }
+            .chipStyle()
+            .buttonStyle(.borderless)
+            .disabled(isSaving)
+        }
+    }
+
+    @ViewBuilder
+    private var timeControl: some View {
+        if hasDueTime {
+            HStack(spacing: 4) {
+                Image(systemName: "clock")
+                    .foregroundStyle(.secondary)
+
+                DatePicker(
+                    "Due time",
+                    selection: $dueDate,
+                    displayedComponents: .hourAndMinute
+                )
+                .labelsHidden()
+                .datePickerStyle(.field)
+
+                Button {
+                    hasDueTime = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+            }
+            .chipStyle()
+            .disabled(isSaving)
+        } else {
+            Button {
+                hasDueTime = true
+            } label: {
+                Label("Time", systemImage: "clock")
+            }
+            .chipStyle()
+            .buttonStyle(.borderless)
+            .disabled(isSaving)
+        }
+    }
+
     private var dueDateComponents: DateComponents? {
         guard hasDueDate else { return nil }
 
@@ -212,6 +297,18 @@ struct ContentView: View {
         }
 
         return dueDateComponents
+    }
+}
+
+private extension View {
+    func chipStyle() -> some View {
+        self
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(Color.blue.opacity(0.11))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
