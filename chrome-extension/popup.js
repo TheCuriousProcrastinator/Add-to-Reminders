@@ -1017,6 +1017,45 @@ function isMissingHelperError(error) {
   );
 }
 
+function showMacOnly() {
+  listsLoaded = false;
+
+  reminderCard.hidden = true;
+  addButton.hidden = true;
+  statusElement.hidden = true;
+  helperRequired.hidden = false;
+
+  const title =
+    helperRequired.querySelector(
+      ".helper-title"
+    );
+
+  const copy =
+    helperRequired.querySelector(
+      ".helper-copy"
+    );
+
+  const note =
+    helperRequired.querySelector(
+      ".helper-note"
+    );
+
+  const actions =
+    helperRequired.querySelector(
+      ".helper-actions"
+    );
+
+  title.textContent =
+    "macOS required";
+
+  copy.textContent =
+    "Add to Reminders works with Apple Reminders and is available on macOS only.";
+
+  note.textContent = "";
+
+  actions.hidden = true;
+}
+
 function showHelperRequired() {
   listsLoaded = false;
 
@@ -1721,6 +1760,14 @@ checkHelperButton.addEventListener(
 );
 
 async function init() {
+  const platform =
+    await chrome.runtime.getPlatformInfo();
+
+  if (platform.os !== "mac") {
+    showMacOnly();
+    return;
+  }
+
   await loadCurrentPage();
   await loadLists();
 
