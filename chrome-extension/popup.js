@@ -79,8 +79,8 @@ const checkHelperButton =
 const HELPER_DOWNLOAD_URL =
   "https:" +
   "//github.com/TheCuriousProcrastinator/" +
-  "Add-to-Reminders/releases/download/v0.1.1/" +
-  "AddToRemindersHelper-0.1.1.pkg";
+  "Add-to-Reminders/releases/download/v0.1.4/" +
+  "AddToRemindersHelper-0.1.4.pkg";
 
 let currentUrl = "";
 

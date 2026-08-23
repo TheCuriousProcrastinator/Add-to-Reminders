@@ -19,6 +19,9 @@ APP_BIN="$APP_CONTENTS/MacOS/add-to-reminders-host"
 NATIVE_DIR="$PKG_ROOT/Library/Google/Chrome/NativeMessagingHosts"
 NATIVE_MANIFEST="$NATIVE_DIR/com.alex.addtoreminders.json"
 
+CHROME_TESTING_NATIVE_DIR="$PKG_ROOT/Library/Google/ChromeForTesting/NativeMessagingHosts"
+CHROME_TESTING_NATIVE_MANIFEST="$CHROME_TESTING_NATIVE_DIR/com.alex.addtoreminders.json"
+
 PKG="$DIST_DIR/AddToRemindersHelper-$VERSION.pkg"
 
 cleanup() {
@@ -29,6 +32,7 @@ trap cleanup EXIT
 mkdir -p "$BUILD_DIR"
 mkdir -p "$APP_CONTENTS/MacOS"
 mkdir -p "$NATIVE_DIR"
+mkdir -p "$CHROME_TESTING_NATIVE_DIR"
 mkdir -p "$DIST_DIR"
 
 cp "$HELPER_DIR/Info.plist" "$BUILD_DIR/Info.plist"
@@ -128,6 +132,8 @@ cat > "$NATIVE_MANIFEST" <<'JSON'
 JSON
 
 chmod 644 "$NATIVE_MANIFEST"
+cp "$NATIVE_MANIFEST" "$CHROME_TESTING_NATIVE_MANIFEST"
+chmod 644 "$CHROME_TESTING_NATIVE_MANIFEST"
 
 codesign \
     --force \
