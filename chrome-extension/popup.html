@@ -482,6 +482,63 @@
       color: var(--success);
     }
 
+    #helperRequired {
+      margin-top: 12px;
+      padding: 16px;
+      background: var(--card);
+      border-radius: 13px;
+    }
+
+    #helperRequired[hidden] {
+      display: none;
+    }
+
+    .helper-title {
+      margin-bottom: 5px;
+      font-size: 15px;
+      font-weight: 650;
+    }
+
+    .helper-copy {
+      color: var(--secondary);
+      font-size: 12px;
+      line-height: 17px;
+    }
+
+    .helper-note {
+      margin-top: 7px;
+      color: var(--secondary);
+      font-size: 11px;
+      line-height: 15px;
+    }
+
+    .helper-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .helper-actions button {
+      flex: 1;
+      min-height: 34px;
+      border: 0;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #downloadHelper {
+      background: var(--accent);
+      color: white;
+    }
+
+    #checkHelper {
+      background: var(--smart-bg);
+      color: var(--accent);
+    }
+
     #add {
       width: 100%;
       height: 42px;
@@ -647,6 +704,30 @@
     </div>
 
     <div id="status"></div>
+
+    <div id="helperRequired" hidden>
+      <div class="helper-title">Mac Helper required</div>
+
+      <div class="helper-copy">
+        Install the small Mac helper so Chrome can add items to Apple Reminders.
+        Then click Check Again.
+      </div>
+
+      <div class="helper-note">
+        This beta installer is unsigned. macOS may require approval in
+        System Settings &gt; Privacy &amp; Security.
+      </div>
+
+      <div class="helper-actions">
+        <button id="downloadHelper" type="button">
+          Download Mac Helper
+        </button>
+
+        <button id="checkHelper" type="button">
+          Check Again
+        </button>
+      </div>
+    </div>
 
     <button id="add" type="submit" disabled>
       Add Reminder

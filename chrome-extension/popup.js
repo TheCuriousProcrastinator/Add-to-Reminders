@@ -64,6 +64,24 @@ const addButton =
 const statusElement =
   document.getElementById("status");
 
+const reminderCard =
+  document.querySelector(".reminder-card");
+
+const helperRequired =
+  document.getElementById("helperRequired");
+
+const downloadHelperButton =
+  document.getElementById("downloadHelper");
+
+const checkHelperButton =
+  document.getElementById("checkHelper");
+
+const HELPER_DOWNLOAD_URL =
+  "https:" +
+  "//github.com/TheCuriousProcrastinator/" +
+  "Add-to-Reminders/releases/download/v0.1.1/" +
+  "AddToRemindersHelper-0.1.1.pkg";
+
 let currentUrl = "";
 
 let pageIsValid = false;
@@ -978,7 +996,49 @@ async function loadCurrentPage() {
   updateAddButton();
 }
 
+function isMissingHelperError(error) {
+  const message =
+    String(
+      error?.message ||
+      error ||
+      ""
+    ).toLowerCase();
+
+  return (
+    message.includes(
+      "native messaging host not found"
+    ) ||
+    message.includes(
+      "specified native messaging host not found"
+    ) ||
+    message.includes(
+      "access to the specified native messaging host is forbidden"
+    )
+  );
+}
+
+function showHelperRequired() {
+  listsLoaded = false;
+
+  reminderCard.hidden = true;
+  addButton.hidden = true;
+  statusElement.hidden = true;
+  helperRequired.hidden = false;
+
+  updateAddButton();
+}
+
+function hideHelperRequired() {
+  helperRequired.hidden = true;
+  reminderCard.hidden = false;
+  addButton.hidden = false;
+  statusElement.hidden = false;
+}
+
 async function loadLists() {
+  listsLoaded = false;
+  updateAddButton();
+
   try {
     const response =
       await sendNativeMessage({
@@ -1053,6 +1113,8 @@ async function loadLists() {
     listSelect.disabled = false;
     listsLoaded = true;
 
+    hideHelperRequired();
+
     applySmartProject();
     renderTitleHighlight();
 
@@ -1066,10 +1128,21 @@ async function loadLists() {
     listSelect.innerHTML =
       "<option>Mac helper unavailable</option>";
 
+    listsLoaded = false;
+
+    if (isMissingHelperError(error)) {
+      showHelperRequired();
+      return;
+    }
+
+    hideHelperRequired();
+
     setStatus(
       `Could not connect to Reminders: ${error.message}`,
       "error"
     );
+
+    updateAddButton();
   }
 }
 
@@ -1617,6 +1690,32 @@ form.addEventListener(
         "Add Reminder";
 
       updateAddButton();
+    }
+  }
+);
+
+downloadHelperButton.addEventListener(
+  "click",
+  () => {
+    chrome.tabs.create({
+      url: HELPER_DOWNLOAD_URL
+    });
+  }
+);
+
+checkHelperButton.addEventListener(
+  "click",
+  async () => {
+    checkHelperButton.disabled = true;
+    checkHelperButton.textContent =
+      "Checking…";
+
+    try {
+      await loadLists();
+    } finally {
+      checkHelperButton.disabled = false;
+      checkHelperButton.textContent =
+        "Check Again";
     }
   }
 );
