@@ -661,10 +661,6 @@ func createReminder(
                 reminder.calendarItemExternalIdentifier ?? ""
 
             var richLinkResult: Int32 = 1
-            var richLinkError =
-                externalIdentifier.isEmpty
-                    ? "EventKit external identifier is empty."
-                    : ""
 
             if !externalIdentifier.isEmpty {
                 var errorBuffer =
@@ -684,7 +680,6 @@ func createReminder(
                     }
                 }
 
-                richLinkError = String(cString: errorBuffer)
             }
 
             if richLinkResult != 0 {

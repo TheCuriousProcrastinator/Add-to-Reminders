@@ -6,6 +6,7 @@ HELPER="$ROOT/mac-helper"
 
 HOST_NAME="com.alex.addtoreminders"
 EXTENSION_ID="fdkkbdcnkigfhiabomhklbfapojbpdol"
+WEBSTORE_EXTENSION_ID="nofdmceaajfglgpldmibhggabdjgbgnf"
 
 INSTALL_ROOT="$HOME/Library/Application Support/AddToReminders"
 APP="$INSTALL_ROOT/AddToRemindersHost.app"
@@ -132,7 +133,8 @@ cat > "$NATIVE_HOST_MANIFEST" <<JSON
   "path": "$APP/Contents/MacOS/add-to-reminders-host",
   "type": "stdio",
   "allowed_origins": [
-    "chrome-extension://$EXTENSION_ID/"
+    "chrome-extension://$EXTENSION_ID/",
+    "chrome-extension://$WEBSTORE_EXTENSION_ID/"
   ]
 }
 JSON

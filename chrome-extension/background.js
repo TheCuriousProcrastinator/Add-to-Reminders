@@ -172,13 +172,18 @@ chrome.contextMenus.onClicked.addListener(
       return;
     }
 
-    try {
-      await chrome.action.openPopup();
-    } catch (error) {
-      console.error(
-        "Could not open popup:",
-        error
-      );
+    if (
+      typeof chrome.action.openPopup ===
+      "function"
+    ) {
+      try {
+        await chrome.action.openPopup();
+      } catch (error) {
+        console.error(
+          "Could not open popup:",
+          error
+        );
+      }
     }
   }
 );
