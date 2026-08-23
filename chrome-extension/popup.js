@@ -10,12 +10,6 @@ import {
   parseSmartPriority
 } from "./priority-parser.js";
 
-import {
-  parseSmartTags,
-  findTagFragment,
-  filterTagSuggestions
-} from "./tag-parser.js";
-
 const HOST_NAME = "com.alex.addtoreminders";
 
 const form = document.getElementById("form");
@@ -108,192 +102,6 @@ let listBeforeSmartProject = null;
 
 let visibleProjectSuggestions = [];
 let projectSuggestionIndex = -1;
-
-let knownTags = [];
-
-// Tags explicitly approved with the
-// + Create button in this popup.
-let approvedNewTags =
-  new Map();
-
-
-function tagKey(name) {
-  return String(name)
-    .trim()
-    .toLocaleLowerCase();
-}
-
-function findKnownTag(name) {
-  const key =
-    tagKey(name);
-
-  return knownTags.find(
-    tag =>
-      tagKey(tag) === key
-  ) || null;
-}
-
-function isCommittedTag(name) {
-  const key =
-    tagKey(name);
-
-  return Boolean(
-    findKnownTag(name) ||
-    approvedNewTags.has(key)
-  );
-}
-
-function canonicalCommittedTag(name) {
-  const existing =
-    findKnownTag(name);
-
-  if (existing) {
-    return existing;
-  }
-
-  return (
-    approvedNewTags.get(
-      tagKey(name)
-    ) ||
-    null
-  );
-}
-
-function getCommittedTags(text) {
-  const parsed =
-    parseSmartTags(text);
-
-  const result = [];
-  const seen = new Set();
-
-  for (const tag of parsed.tags) {
-    const canonical =
-      canonicalCommittedTag(tag);
-
-    if (!canonical) {
-      continue;
-    }
-
-    const key =
-      tagKey(canonical);
-
-    if (seen.has(key)) {
-      continue;
-    }
-
-    seen.add(key);
-    result.push(canonical);
-  }
-
-  return result;
-}
-
-async function loadKnownTags() {
-  const stored =
-    await chrome.storage.local.get(
-      "knownReminderTags"
-    );
-
-  const cachedTags =
-    Array.isArray(
-      stored.knownReminderTags
-    )
-      ? stored.knownReminderTags
-      : [];
-
-  let sourceTags =
-    cachedTags;
-
-  try {
-    const response =
-      await sendNativeMessage({
-        action: "tags"
-      });
-
-    // Real Apple Reminders tags are authoritative
-    // whenever the native lookup succeeds.
-    if (
-      response?.ok &&
-      Array.isArray(response.tags)
-    ) {
-      sourceTags =
-        response.tags;
-    }
-
-  } catch {
-    // Keep the local cache as a fallback.
-  }
-
-  const unique =
-    new Map();
-
-  for (const tag of sourceTags) {
-    const name =
-      String(tag).trim();
-
-    if (!name) {
-      continue;
-    }
-
-    unique.set(
-      tagKey(name),
-      name
-    );
-  }
-
-  knownTags =
-    Array.from(
-      unique.values()
-    ).sort(
-      (a, b) =>
-        a.localeCompare(
-          b,
-          undefined,
-          { sensitivity: "base" }
-        )
-    );
-}
-
-async function rememberTags(tags) {
-  const combined =
-    new Map();
-
-  for (
-    const tag of [
-      ...knownTags,
-      ...tags
-    ]
-  ) {
-    const name =
-      String(tag).trim();
-
-    if (!name) {
-      continue;
-    }
-
-    combined.set(
-      tagKey(name),
-      name
-    );
-  }
-
-  knownTags =
-    Array.from(
-      combined.values()
-    ).sort(
-      (a, b) =>
-        a.localeCompare(
-          b,
-          undefined,
-          { sensitivity: "base" }
-        )
-    );
-
-  await chrome.storage.local.set({
-    knownReminderTags:
-      knownTags
-  });
-}
 
 function setStatus(message, type = "") {
   statusElement.textContent = message;
@@ -473,9 +281,6 @@ function renderTitleHighlight() {
   const priorityParsed =
     parseSmartPriority(text);
 
-  const tagParsed =
-    parseSmartTags(text);
-
   const tokens = [];
 
   if (
@@ -507,20 +312,6 @@ function renderTitleHighlight() {
     tokens.push({
       start: priorityParsed.matchedStart,
       end: priorityParsed.matchedEnd,
-      className: "smart-token"
-    });
-  }
-
-  for (
-    const tag of tagParsed.matches
-  ) {
-    if (!isCommittedTag(tag.tag)) {
-      continue;
-    }
-
-    tokens.push({
-      start: tag.matchedStart,
-      end: tag.matchedEnd,
       className: "smart-token"
     });
   }
@@ -644,143 +435,6 @@ function renderProjectSuggestions() {
   const caret =
     titleInput.selectionStart ??
     titleInput.value.length;
-
-  const tagFragment =
-    findTagFragment(
-      titleInput.value,
-      caret
-    );
-
-  if (tagFragment) {
-    const matches =
-      filterTagSuggestions(
-        tagFragment,
-        knownTags
-      );
-
-    const items =
-      matches.map(tag => ({
-        type: "tag",
-        tag
-      }));
-
-    const requestedName =
-      tagFragment.query.trim();
-
-    const exactExisting =
-      requestedName
-        ? findKnownTag(
-            requestedName
-          )
-        : null;
-
-    if (
-      requestedName &&
-      !exactExisting
-    ) {
-      items.push({
-        type: "createTag",
-        tag: requestedName
-      });
-    }
-
-    if (!items.length) {
-      hideProjectSuggestions();
-      return;
-    }
-
-    visibleProjectSuggestions =
-      items;
-
-    if (
-      projectSuggestionIndex < 0 ||
-      projectSuggestionIndex >=
-        items.length
-    ) {
-      projectSuggestionIndex = 0;
-    }
-
-    projectSuggestions.innerHTML = "";
-
-    items.forEach(
-      (item, index) => {
-        const button =
-          document.createElement(
-            "button"
-          );
-
-        button.type = "button";
-        button.className =
-          "project-suggestion";
-
-        if (
-          index ===
-          projectSuggestionIndex
-        ) {
-          button.classList.add(
-            "active"
-          );
-        }
-
-        const symbol =
-          document.createElement(
-            "span"
-          );
-
-        symbol.className =
-          "project-suggestion-slash";
-
-        const name =
-          document.createElement(
-            "span"
-          );
-
-        if (
-          item.type ===
-          "createTag"
-        ) {
-          symbol.textContent = "+";
-          name.textContent =
-            `Create "${item.tag}"`;
-
-        } else {
-          symbol.textContent = "#";
-          name.textContent =
-            item.tag;
-        }
-
-        button.append(
-          symbol,
-          name
-        );
-
-        button.addEventListener(
-          "mousedown",
-          event => {
-            event.preventDefault();
-          }
-        );
-
-        button.addEventListener(
-          "click",
-          async () => {
-            await chooseProjectSuggestion(
-              item
-            );
-          }
-        );
-
-        projectSuggestions.appendChild(
-          button
-        );
-      }
-    );
-
-    projectSuggestions.hidden =
-      false;
-
-    return;
-  }
 
   const fragment =
     findProjectFragment(
@@ -912,87 +566,6 @@ function renderProjectSuggestions() {
 }
 
 async function chooseProjectSuggestion(item) {
-  if (
-    item.type === "tag" ||
-    item.type === "createTag"
-  ) {
-    const caret =
-      titleInput.selectionStart ??
-      titleInput.value.length;
-
-    const fragment =
-      findTagFragment(
-        titleInput.value,
-        caret
-      );
-
-    if (!fragment) {
-      return;
-    }
-
-    const name =
-      String(item.tag).trim();
-
-    if (!name) {
-      return;
-    }
-
-    if (
-      item.type ===
-      "createTag"
-    ) {
-      // Explicit mouse click is the
-      // approval to create this tag
-      // when Add Reminder is pressed.
-      approvedNewTags.set(
-        tagKey(name),
-        name
-      );
-    }
-
-    const before =
-      titleInput.value.slice(
-        0,
-        fragment.start
-      );
-
-    const after =
-      titleInput.value.slice(
-        fragment.end
-      );
-
-    const token =
-      `#${name}`;
-
-    const needsSpace =
-      after.length > 0 &&
-      !after.startsWith(" ");
-
-    titleInput.value =
-      before +
-      token +
-      (needsSpace ? " " : "") +
-      after;
-
-    const newCaret =
-      before.length +
-      token.length +
-      (needsSpace ? 1 : 0);
-
-    titleInput.focus();
-
-    titleInput.setSelectionRange(
-      newCaret,
-      newCaret
-    );
-
-    hideProjectSuggestions();
-    renderTitleHighlight();
-    updateAddButton();
-
-    return;
-  }
-
   let list;
 
   if (item.type === "create") {
@@ -1149,9 +722,6 @@ function cleanTitleForSave(text) {
   const priorityParsed =
     parseSmartPriority(text);
 
-  const tagParsed =
-    parseSmartTags(text);
-
   const ranges = [];
 
   if (
@@ -1181,19 +751,6 @@ function cleanTitleForSave(text) {
     ranges.push([
       priorityParsed.matchedStart,
       priorityParsed.matchedEnd
-    ]);
-  }
-
-  for (
-    const tag of tagParsed.matches
-  ) {
-    if (!isCommittedTag(tag.tag)) {
-      continue;
-    }
-
-    ranges.push([
-      tag.matchedStart,
-      tag.matchedEnd
     ]);
   }
 
@@ -1798,8 +1355,7 @@ titleInput.addEventListener(
       // Creating a brand-new Reminders list
       // always requires an explicit click.
       if (
-        selectedItem?.type === "create" ||
-        selectedItem?.type === "createTag"
+        selectedItem?.type === "create"
       ) {
         event.preventDefault();
         return;
@@ -1913,11 +1469,6 @@ form.addEventListener(
         titleInput.value
       );
 
-    const committedTags =
-      getCommittedTags(
-        titleInput.value
-      );
-
     const title =
       cleanTitleForSave(
         titleInput.value
@@ -1986,10 +1537,7 @@ listId: listSelect.value,
             ),
 
           notes:
-            notesInput.value.trim(),
-
-          tags:
-            committedTags
+            notesInput.value.trim()
         });
 
       if (!response.ok) {
@@ -2003,10 +1551,6 @@ listId: listSelect.value,
         lastListId:
           listSelect.value
       });
-
-      await rememberTags(
-        committedTags
-      );
 
       setStatus(
         `Added to ${response.list}`,
@@ -2036,7 +1580,6 @@ listId: listSelect.value,
 );
 
 async function init() {
-  await loadKnownTags();
   await loadCurrentPage();
   await loadLists();
 

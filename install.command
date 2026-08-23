@@ -42,7 +42,6 @@ xcrun swiftc \
   -framework AppKit \
   -F/System/Library/PrivateFrameworks \
   -framework ReminderKit \
-  -lsqlite3 \
   -Xlinker -sectcreate \
   -Xlinker __TEXT \
   -Xlinker __info_plist \
@@ -150,14 +149,6 @@ echo "$APP"
 echo
 echo "Native host:"
 echo "$NATIVE_HOST_MANIFEST"
-echo
-echo "NEXT MANUAL STEP"
-echo "----------------"
-echo "1. Open System Settings > Privacy & Security > Full Disk Access"
-echo "2. Add:"
-echo "   $APP"
-echo "3. Turn it ON"
-echo
 echo "Then load this folder as an unpacked Chrome extension:"
 echo "   $ROOT/chrome-extension"
 echo

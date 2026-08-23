@@ -20,114 +20,9 @@ func addRichReminder(
     _ recurrenceJSON: UnsafePointer<CChar>,
     _ priority: Int32,
     _ notes: UnsafePointer<CChar>,
-    _ tagsJSON: UnsafePointer<CChar>,
     _ errorBuffer: UnsafeMutablePointer<CChar>,
     _ errorBufferLength: Int32
 ) -> Int32
-
-@_silgen_name("load_reminder_tags_json")
-func loadReminderTagsJSON(
-    _ jsonBuffer:
-        UnsafeMutablePointer<CChar>,
-    _ jsonBufferLength: Int32,
-    _ errorBuffer:
-        UnsafeMutablePointer<CChar>,
-    _ errorBufferLength: Int32
-) -> Int32
-
-func loadReminderTagNames() -> [String] {
-    var jsonBuffer =
-        [CChar](
-            repeating: 0,
-            count: 65_536
-        )
-
-    var errorBuffer =
-        [CChar](
-            repeating: 0,
-            count: 2_048
-        )
-
-    let result: Int32 =
-        jsonBuffer
-            .withUnsafeMutableBufferPointer {
-                jsonPointer in
-
-                errorBuffer
-                    .withUnsafeMutableBufferPointer {
-                        errorPointer in
-
-                        loadReminderTagsJSON(
-                            jsonPointer.baseAddress!,
-                            Int32(
-                                jsonPointer.count
-                            ),
-                            errorPointer.baseAddress!,
-                            Int32(
-                                errorPointer.count
-                            )
-                        )
-                    }
-            }
-
-    guard result == 0 else {
-        let message =
-            errorBuffer
-                .withUnsafeBufferPointer {
-                    pointer -> String in
-
-                    guard
-                        let base =
-                            pointer.baseAddress
-                    else {
-                        return ""
-                    }
-
-                    return String(
-                        cString: base
-                    )
-                }
-
-        stderr(
-            "Could not load Reminders tags: \(message)"
-        )
-
-        return []
-    }
-
-    let json =
-        jsonBuffer
-            .withUnsafeBufferPointer {
-                pointer -> String in
-
-                guard
-                    let base =
-                        pointer.baseAddress
-                else {
-                    return "[]"
-                }
-
-                return String(
-                    cString: base
-                )
-            }
-
-    guard
-        let data =
-            json.data(
-                using: .utf8
-            ),
-        let tags =
-            try? JSONSerialization
-                .jsonObject(
-                    with: data
-                ) as? [String]
-    else {
-        return []
-    }
-
-    return tags
-}
 
 func stderr(_ message: String) {
     FileHandle.standardError.write(
@@ -493,27 +388,6 @@ func createReminder(
     let notes =
         request["notes"] as? String ?? ""
 
-    let tags =
-        request["tags"] as? [String] ?? []
-
-    let tagsJSON: String
-
-    if
-        let data =
-            try? JSONSerialization.data(
-                withJSONObject: tags
-            ),
-        let encoded =
-            String(
-                data: data,
-                encoding: .utf8
-            )
-    {
-        tagsJSON = encoded
-    } else {
-        tagsJSON = "[]"
-    }
-
     let requestedPriority =
         request["priority"] as? Int ?? 0
 
@@ -631,32 +505,27 @@ func createReminder(
                                 notes.withCString {
                                     notesPointer in
 
-                                    tagsJSON.withCString {
-                                        tagsPointer in
-
-                                        addRichReminder(
-                                            listPointer,
-                                            titlePointer,
-                                            urlPointer,
-                                            imageURLPointer,
-                                            year,
-                                            month,
-                                            day,
-                                            hour,
-                                            minute,
-                                            hasTime,
-                                            recurrenceFrequency,
-                                            recurrenceInterval,
-                                            recurrencePointer,
-                                            priority,
-                                            notesPointer,
-                                            tagsPointer,
-                                            errorPointer.baseAddress!,
-                                            Int32(
-                                                errorPointer.count
-                                            )
+                                    addRichReminder(
+                                        listPointer,
+                                        titlePointer,
+                                        urlPointer,
+                                        imageURLPointer,
+                                        year,
+                                        month,
+                                        day,
+                                        hour,
+                                        minute,
+                                        hasTime,
+                                        recurrenceFrequency,
+                                        recurrenceInterval,
+                                        recurrencePointer,
+                                        priority,
+                                        notesPointer,
+                                        errorPointer.baseAddress!,
+                                        Int32(
+                                            errorPointer.count
                                         )
-                                    }
+                                    )
                                 }
                             }
                         }
@@ -705,12 +574,6 @@ while let request = readMessage() {
         send([
             "ok": true,
             "lists": reminderLists()
-        ])
-
-    case "tags":
-        send([
-            "ok": true,
-            "tags": loadReminderTagNames()
         ])
 
     case "add":

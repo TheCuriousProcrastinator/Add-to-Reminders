@@ -1,6 +1,5 @@
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
-#import <sqlite3.h>
 
 @interface REMObjectID : NSObject
 + (id)objectIDWithURL:(NSURL *)url;
@@ -26,7 +25,6 @@
 
 @interface REMReminderChangeItem : NSObject
 - (id)attachmentContext;
-- (id)hashtagContext;
 - (void)setNotesAsString:(NSString *)notes;
 - (void)setPriority:(NSInteger)priority;
 - (void)setDueDateComponents:(NSDateComponents *)components;
@@ -54,11 +52,6 @@
                           error:(NSError **)error;
 @end
 
-@interface REMReminderHashtagContextChangeItem : NSObject
-- (id)addHashtagWithType:(NSInteger)type
-                    name:(NSString *)name;
-@end
-
 static void copy_error(
     NSString *message,
     char *buffer,
@@ -70,212 +63,6 @@ static void copy_error(
     snprintf(buffer, bufferLength, "%s", utf8);
 }
 
-
-int load_reminder_tags_json(
-    char *jsonBuffer,
-    int jsonBufferLength,
-    char *errorBuffer,
-    int errorBufferLength
-) {
-    @autoreleasepool {
-        NSString *storesPath =
-            [NSHomeDirectory()
-                stringByAppendingPathComponent:
-                    @"Library/Group Containers/group.com.apple.reminders/Container_v1/Stores"];
-
-        NSError *directoryError = nil;
-
-        NSArray<NSString *> *files =
-            [[NSFileManager defaultManager]
-                contentsOfDirectoryAtPath:storesPath
-                error:&directoryError];
-
-        if (!files) {
-            copy_error(
-                directoryError.localizedDescription
-                    ?: @"Could not open Reminders data directory.",
-                errorBuffer,
-                errorBufferLength
-            );
-            return 1;
-        }
-
-        NSMutableDictionary<NSString *, NSString *> *tagsByKey =
-            [NSMutableDictionary dictionary];
-
-        BOOL queriedDatabase = NO;
-
-        const char *sql =
-            "SELECT DISTINCT "
-            "COALESCE("
-            "NULLIF(TRIM(ZNAME), ''), "
-            "NULLIF(TRIM(ZCANONICALNAME), '')"
-            ") "
-            "FROM ZREMCDHASHTAGLABEL "
-            "WHERE "
-            "NULLIF(TRIM(ZNAME), '') IS NOT NULL "
-            "OR "
-            "NULLIF(TRIM(ZCANONICALNAME), '') IS NOT NULL "
-            "ORDER BY 1 COLLATE NOCASE;";
-
-        for (NSString *filename in files) {
-            if (
-                ![filename hasPrefix:@"Data-"] ||
-                ![filename hasSuffix:@".sqlite"]
-            ) {
-                continue;
-            }
-
-            NSString *path =
-                [storesPath
-                    stringByAppendingPathComponent:
-                        filename];
-
-            sqlite3 *database = NULL;
-
-            int openResult =
-                sqlite3_open_v2(
-                    path.fileSystemRepresentation,
-                    &database,
-                    SQLITE_OPEN_READONLY,
-                    NULL
-                );
-
-            if (
-                openResult != SQLITE_OK ||
-                !database
-            ) {
-                if (database) {
-                    sqlite3_close(database);
-                }
-
-                continue;
-            }
-
-            sqlite3_stmt *statement = NULL;
-
-            int prepareResult =
-                sqlite3_prepare_v2(
-                    database,
-                    sql,
-                    -1,
-                    &statement,
-                    NULL
-                );
-
-            if (prepareResult != SQLITE_OK) {
-                if (statement) {
-                    sqlite3_finalize(statement);
-                }
-
-                sqlite3_close(database);
-                continue;
-            }
-
-            queriedDatabase = YES;
-
-            while (
-                sqlite3_step(statement) ==
-                SQLITE_ROW
-            ) {
-                const unsigned char *value =
-                    sqlite3_column_text(
-                        statement,
-                        0
-                    );
-
-                if (!value) {
-                    continue;
-                }
-
-                NSString *name =
-                    [NSString
-                        stringWithUTF8String:
-                            (const char *)value];
-
-                name =
-                    [name
-                        stringByTrimmingCharactersInSet:
-                            NSCharacterSet
-                                .whitespaceAndNewlineCharacterSet];
-
-                if (name.length == 0) {
-                    continue;
-                }
-
-                tagsByKey[
-                    name.lowercaseString
-                ] = name;
-            }
-
-            sqlite3_finalize(statement);
-            sqlite3_close(database);
-        }
-
-        if (!queriedDatabase) {
-            copy_error(
-                @"Could not read the Reminders tag database.",
-                errorBuffer,
-                errorBufferLength
-            );
-            return 1;
-        }
-
-        NSArray<NSString *> *tags =
-            [tagsByKey.allValues
-                sortedArrayUsingSelector:
-                    @selector(
-                        localizedCaseInsensitiveCompare:
-                    )];
-
-        NSError *jsonError = nil;
-
-        NSData *jsonData =
-            [NSJSONSerialization
-                dataWithJSONObject:tags
-                options:0
-                error:&jsonError];
-
-        if (!jsonData) {
-            copy_error(
-                jsonError.localizedDescription
-                    ?: @"Could not encode Reminders tags.",
-                errorBuffer,
-                errorBufferLength
-            );
-            return 1;
-        }
-
-        NSString *json =
-            [[NSString alloc]
-                initWithData:jsonData
-                encoding:NSUTF8StringEncoding];
-
-        const char *utf8 =
-            json.UTF8String ?: "[]";
-
-        if (
-            strlen(utf8) + 1 >
-            (size_t)jsonBufferLength
-        ) {
-            copy_error(
-                @"Reminders tag catalog is too large.",
-                errorBuffer,
-                errorBufferLength
-            );
-            return 1;
-        }
-
-        snprintf(
-            jsonBuffer,
-            jsonBufferLength,
-            "%s",
-            utf8
-        );
-
-        return 0;
-    }
-}
 
 int add_rich_reminder(
     const char *listIDCString,
@@ -293,7 +80,6 @@ int add_rich_reminder(
     const char *recurrenceJSONCString,
     int priority,
     const char *notesCString,
-    const char *tagsJSONCString,
     char *errorBuffer,
     int errorBufferLength
 ) {
@@ -312,39 +98,6 @@ int add_rich_reminder(
 
         NSString *notes =
             [NSString stringWithUTF8String:notesCString ?: ""];
-
-        NSString *tagsJSON =
-            [NSString stringWithUTF8String:tagsJSONCString ?: "[]"];
-
-        NSArray *tagNames = @[];
-
-        if (tagsJSON.length > 0) {
-            NSData *tagData =
-                [tagsJSON dataUsingEncoding:NSUTF8StringEncoding];
-
-            NSError *tagJSONError = nil;
-
-            id tagObject =
-                [NSJSONSerialization
-                    JSONObjectWithData:tagData
-                    options:0
-                    error:&tagJSONError];
-
-            if (
-                tagJSONError ||
-                ![tagObject isKindOfClass:[NSArray class]]
-            ) {
-                copy_error(
-                    @"Invalid tags payload.",
-                    errorBuffer,
-                    errorBufferLength
-                );
-                return 1;
-            }
-
-            tagNames =
-                (NSArray *)tagObject;
-        }
 
         if (listID.length == 0 || title.length == 0) {
             copy_error(
@@ -544,51 +297,6 @@ int add_rich_reminder(
                     interval:interval
                     end:nil
                 ];
-            }
-        }
-
-        if (tagNames.count > 0) {
-            REMReminderHashtagContextChangeItem *hashtagContext =
-                [reminder hashtagContext];
-
-            if (!hashtagContext) {
-                copy_error(
-                    @"Could not create Reminders hashtag context.",
-                    errorBuffer,
-                    errorBufferLength
-                );
-                return 1;
-            }
-
-            NSMutableSet<NSString *> *seenTags =
-                [NSMutableSet set];
-
-            for (id value in tagNames) {
-                if (![value isKindOfClass:[NSString class]]) {
-                    continue;
-                }
-
-                NSString *name =
-                    [(NSString *)value
-                        stringByTrimmingCharactersInSet:
-                            NSCharacterSet.whitespaceAndNewlineCharacterSet];
-
-                if (name.length == 0) {
-                    continue;
-                }
-
-                NSString *key =
-                    name.lowercaseString;
-
-                if ([seenTags containsObject:key]) {
-                    continue;
-                }
-
-                [seenTags addObject:key];
-
-                [hashtagContext
-                    addHashtagWithType:1
-                    name:name];
             }
         }
 
