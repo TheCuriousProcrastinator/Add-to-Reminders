@@ -392,96 +392,6 @@
       white-space: nowrap;
     }
 
-    #imageRow {
-      min-height: 58px;
-      display: grid;
-      grid-template-columns:
-        44px 52px minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 0;
-      padding: 7px 13px;
-    }
-
-    .image-icon {
-      position: relative;
-      width: 16px;
-      height: 14px;
-      border: 1.5px solid var(--secondary);
-      border-radius: 3px;
-    }
-
-    .image-icon::before {
-      content: "";
-      position: absolute;
-      left: 2px;
-      bottom: 2px;
-      width: 10px;
-      height: 5px;
-      border-left: 1.5px solid var(--secondary);
-      border-bottom: 1.5px solid var(--secondary);
-      transform: skewX(-35deg);
-    }
-
-    .image-icon::after {
-      content: "";
-      position: absolute;
-      right: 2px;
-      top: 2px;
-      width: 3px;
-      height: 3px;
-      border-radius: 50%;
-      background: var(--secondary);
-    }
-
-    .image-thumbnail-wrap {
-      width: 36px;
-      height: 36px;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid var(--separator);
-      border-radius: 7px;
-      background: rgba(128, 128, 128, 0.12);
-    }
-
-    .image-thumbnail {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: cover;
-    }
-
-    .image-thumbnail-fallback {
-      color: var(--secondary);
-      font-size: 19px;
-      line-height: 1;
-    }
-
-    #imageValue {
-      overflow: hidden;
-      color: var(--secondary);
-      font-size: 13px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      padding-right: 10px;
-    }
-
-    .mini-button {
-      border: 0;
-      background: transparent;
-      color: var(--accent);
-      font: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 6px 0 6px 10px;
-    }
-
-    .mini-button:hover {
-      text-decoration: underline;
-    }
-
     .flag-icon {
       position: relative;
       width: 15px;
@@ -635,40 +545,6 @@
         ></div>
 
         <div id="url"></div>
-      </div>
-
-      <div id="imageSeparator" class="separator" hidden></div>
-
-      <div id="imageRow" hidden>
-        <div
-          id="imageThumbnailWrap"
-          class="image-thumbnail-wrap"
-        >
-          <img
-            id="imageThumbnail"
-            class="image-thumbnail"
-            alt=""
-          >
-          <span
-            id="imageThumbnailFallback"
-            class="image-thumbnail-fallback"
-            hidden
-          >
-            ▧
-          </span>
-        </div>
-
-        <div class="row-label">Image</div>
-
-        <div id="imageValue"></div>
-
-        <button
-          id="removeImage"
-          type="button"
-          class="mini-button"
-        >
-          Remove
-        </button>
       </div>
 
       <div class="separator"></div>

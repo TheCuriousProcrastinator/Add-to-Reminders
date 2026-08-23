@@ -10,35 +10,18 @@ import {
   parseSmartPriority
 } from "./priority-parser.js";
 
+
+let rejectedSmartDateRanges = [];
+let activeSmartDateTokens = [];
+let lastSmartDateText = "";
+
+
 const HOST_NAME = "com.alex.addtoreminders";
 
 const form = document.getElementById("form");
 const titleInput = document.getElementById("title");
 const titleMirror = document.getElementById("titleMirror");
 const urlElement = document.getElementById("url");
-
-
-const imageSeparator =
-  document.getElementById("imageSeparator");
-
-const imageRow =
-  document.getElementById("imageRow");
-
-const imageValue =
-  document.getElementById("imageValue");
-
-const imageThumbnailWrap =
-  document.getElementById("imageThumbnailWrap");
-
-const imageThumbnail =
-  document.getElementById("imageThumbnail");
-
-const imageThumbnailFallback =
-  document.getElementById("imageThumbnailFallback");
-
-const removeImageButton =
-  document.getElementById("removeImage");
-
 const projectSuggestions =
   document.getElementById("projectSuggestions");
 
@@ -83,9 +66,6 @@ const statusElement =
 
 let currentUrl = "";
 
-let currentImageUrl = "";
-let currentImageName = "";
-
 let pageIsValid = false;
 let listsLoaded = false;
 
@@ -113,75 +93,6 @@ function escapeHTML(value) {
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
-}
-
-function filenameFromUrl(rawUrl) {
-  try {
-    const url = new URL(rawUrl);
-
-    const part =
-      url.pathname
-        .split("/")
-        .filter(Boolean)
-        .pop();
-
-    return part
-      ? decodeURIComponent(part)
-      : "Image";
-
-  } catch {
-    return "Image";
-  }
-}
-
-function renderImageRow() {
-  const hasImage =
-    Boolean(currentImageUrl);
-
-  imageSeparator.hidden =
-    !hasImage;
-
-  imageRow.hidden =
-    !hasImage;
-
-  if (!hasImage) {
-    imageValue.textContent = "";
-    imageValue.title = "";
-
-    imageThumbnail.removeAttribute(
-      "src"
-    );
-
-    imageThumbnail.hidden = false;
-    imageThumbnailFallback.hidden = true;
-
-    return;
-  }
-
-  imageValue.textContent =
-    currentImageName ||
-    filenameFromUrl(
-      currentImageUrl
-    );
-
-  imageValue.title =
-    currentImageUrl;
-
-  imageThumbnail.hidden = false;
-  imageThumbnailFallback.hidden = true;
-
-  imageThumbnail.onload = () => {
-    imageThumbnail.hidden = false;
-    imageThumbnailFallback.hidden = true;
-  };
-
-  imageThumbnail.onerror = () => {
-    imageThumbnail.hidden = true;
-    imageThumbnailFallback.hidden = false;
-  };
-
-  imageThumbnail.src =
-    currentImageUrl;
 }
 
 function insertInboxSeparator() {
@@ -266,11 +177,117 @@ function currentReminderLists() {
     }));
 }
 
+
+function syncRejectedSmartDateRanges(text) {
+  const previous =
+    lastSmartDateText;
+
+  if (previous === text) {
+    return;
+  }
+
+  if (
+    !previous ||
+    !rejectedSmartDateRanges.length
+  ) {
+    lastSmartDateText = text;
+    return;
+  }
+
+  let prefix = 0;
+
+  while (
+    prefix < previous.length &&
+    prefix < text.length &&
+    previous[prefix] === text[prefix]
+  ) {
+    prefix++;
+  }
+
+  let suffix = 0;
+
+  while (
+    suffix <
+      previous.length - prefix &&
+    suffix <
+      text.length - prefix &&
+    previous[
+      previous.length - 1 - suffix
+    ] ===
+      text[
+        text.length - 1 - suffix
+      ]
+  ) {
+    suffix++;
+  }
+
+  const previousChangedEnd =
+    previous.length - suffix;
+
+  const delta =
+    text.length -
+    previous.length;
+
+  rejectedSmartDateRanges =
+    rejectedSmartDateRanges
+      .flatMap(range => {
+        if (range.end <= prefix) {
+          return [range];
+        }
+
+        if (
+          range.start >=
+          previousChangedEnd
+        ) {
+          return [{
+            start:
+              range.start + delta,
+            end:
+              range.end + delta
+          }];
+        }
+
+        return [];
+      });
+
+  lastSmartDateText = text;
+}
+
+function parseCurrentSmartDate(text) {
+  syncRejectedSmartDateRanges(text);
+
+  return parseSmartDate(
+    text,
+    new Date(),
+    rejectedSmartDateRanges
+  );
+}
+
+function rejectSmartDateToken(token) {
+  if (!token) {
+    return;
+  }
+
+  const alreadyRejected =
+    rejectedSmartDateRanges.some(
+      range =>
+        range.start === token.start &&
+        range.end === token.end
+    );
+
+  if (!alreadyRejected) {
+    rejectedSmartDateRanges.push({
+      start: token.start,
+      end: token.end
+    });
+  }
+}
+
 function renderTitleHighlight() {
   const text = titleInput.value;
 
   const dateParsed =
-    parseSmartDate(text);
+    parseCurrentSmartDate(text);
 
   const projectParsed =
     parseSmartProject(
@@ -283,13 +300,18 @@ function renderTitleHighlight() {
 
   const tokens = [];
 
-  if (
-    dateParsed.matchedStart != null &&
-    dateParsed.matchedEnd != null
+  activeSmartDateTokens =
+    Array.isArray(dateParsed.tokens)
+      ? dateParsed.tokens
+      : [];
+
+  for (
+    const token of
+    activeSmartDateTokens
   ) {
     tokens.push({
-      start: dateParsed.matchedStart,
-      end: dateParsed.matchedEnd,
+      start: token.start,
+      end: token.end,
       className: "smart-token"
     });
   }
@@ -711,7 +733,7 @@ function applySmartPriority() {
 
 function cleanTitleForSave(text) {
   const dateParsed =
-    parseSmartDate(text);
+    parseCurrentSmartDate(text);
 
   const projectParsed =
     parseSmartProject(
@@ -724,13 +746,13 @@ function cleanTitleForSave(text) {
 
   const ranges = [];
 
-  if (
-    dateParsed.matchedStart != null &&
-    dateParsed.matchedEnd != null
+  for (
+    const token of
+    dateParsed.tokens || []
   ) {
     ranges.push([
-      dateParsed.matchedStart,
-      dateParsed.matchedEnd
+      token.start,
+      token.end
     ]);
   }
 
@@ -914,22 +936,7 @@ async function loadCurrentPage() {
     tab?.url ||
     "";
 
-  
-  currentImageUrl =
-    pending?.imageUrl ||
-    "";
-
-  currentImageName =
-    pending?.imageName ||
-    (
-      currentImageUrl
-        ? filenameFromUrl(
-            currentImageUrl
-          )
-        : ""
-    );
-
-pageIsValid =
+  pageIsValid =
     currentUrl.startsWith("http://") ||
     currentUrl.startsWith("https://");
 
@@ -956,7 +963,6 @@ pageIsValid =
       currentUrl;
   }
 
-  renderImageRow();
   renderTitleHighlight();
 
   if (!pageIsValid) {
@@ -1162,7 +1168,7 @@ function clearSmartDateOption() {
 
 function applySmartDate() {
   const parsed =
-    parseSmartDate(
+    parseCurrentSmartDate(
       titleInput.value
     );
 
@@ -1298,6 +1304,52 @@ titleInput.addEventListener(
     renderProjectSuggestions();
     renderTitleHighlight();
 
+    updateAddButton();
+  }
+);
+
+titleInput.addEventListener(
+  "click",
+  () => {
+    if (
+      titleInput.selectionStart !==
+      titleInput.selectionEnd
+    ) {
+      return;
+    }
+
+    const caret =
+      titleInput.selectionStart;
+
+    if (caret == null) {
+      return;
+    }
+
+    const token =
+      activeSmartDateTokens.find(
+        item =>
+          (
+            caret > item.start &&
+            caret < item.end
+          ) ||
+          (
+            caret === item.start &&
+            item.end > item.start
+          ) ||
+          (
+            caret === item.end &&
+            item.end > item.start
+          )
+      );
+
+    if (!token) {
+      return;
+    }
+
+    rejectSmartDateToken(token);
+
+    applySmartDate();
+    renderTitleHighlight();
     updateAddButton();
   }
 );
@@ -1450,22 +1502,13 @@ listSelect.addEventListener(
   }
 );
 
-removeImageButton.addEventListener(
-  "click",
-  () => {
-    currentImageUrl = "";
-    currentImageName = "";
-    renderImageRow();
-  }
-);
-
 form.addEventListener(
   "submit",
   async event => {
     event.preventDefault();
 
     const parsed =
-      parseSmartDate(
+      parseCurrentSmartDate(
         titleInput.value
       );
 
@@ -1524,8 +1567,7 @@ form.addEventListener(
           action: "add",
           title,
           url: currentUrl,
-                    imageUrl: currentImageUrl,
-listId: listSelect.value,
+          listId: listSelect.value,
           due,
           time,
           recurrence:
@@ -1591,7 +1633,7 @@ async function init() {
   renderTitleHighlight();
 
   refreshRepeatRow(
-    parseSmartDate(
+    parseCurrentSmartDate(
       titleInput.value
     )
   );

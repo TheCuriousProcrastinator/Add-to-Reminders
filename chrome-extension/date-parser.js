@@ -88,6 +88,10 @@ function parseTimeToken(token) {
 
   const value = token.trim().toLowerCase();
 
+  if (value === "noon") {
+    return { hour: 12, minute: 0 };
+  }
+
   // 4pm / 4:30pm
   let match = value.match(
     /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/
@@ -229,7 +233,7 @@ const WEEKDAY_PATTERN =
   "friday|fri|saturday|sat";
 
 const TIME =
-  String.raw`(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d|(?:[01]\d|2[0-3])[0-5]\d)`;
+  String.raw`(?:noon|\d{1,2}(?::\d{2})?\s*(?:am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d|(?:[01]\d|2[0-3])[0-5]\d)`;
 
 function recurrence(
   frequency,
@@ -269,9 +273,9 @@ function recurrenceDateWithTime(
   };
 }
 
-function reminderKitWeekday(jsDay) {
+function eventKitWeekday(jsDay) {
   // JS: Sunday 0 ... Saturday 6
-  // ReminderKit: Sunday 1 ... Saturday 7
+  // EventKit: Sunday 1 ... Saturday 7
   return jsDay + 1;
 }
 
@@ -360,11 +364,97 @@ function nthWeekdayDate(date, weekday, weekNumber) {
   return base;
 }
 
-export function parseSmartDate(
+function parseSmartDateSingle(
   text,
   now = new Date()
 ) {
   const every = String.raw`(?:every|ev)`;
+
+  // QuickAdd parity: in 20 minutes / in 2 hours /
+  // in 3 days at 4pm / in a week at noon
+  {
+    const regex = new RegExp(
+      String.raw`\bin\s+(?:(a)|(\d+))\s+(minutes?|mins?|hours?|hrs?|days?|weeks?|months?)(?:\s+(?:at\s+)?(${TIME}))?\b`,
+      "i"
+    );
+
+    const match = text.match(regex);
+
+    if (match) {
+      const amount =
+        match[1]
+          ? 1
+          : Number(match[2]);
+
+      if (
+        Number.isInteger(amount) &&
+        amount > 0
+      ) {
+        const unit =
+          match[3].toLowerCase();
+
+        const parsedTime =
+          parseTimeToken(match[4]);
+
+        const isTimedUnit =
+          unit.startsWith("min") ||
+          unit.startsWith("hour") ||
+          unit.startsWith("hr");
+
+        let base;
+
+        if (unit.startsWith("min")) {
+          base = new Date(now);
+          base.setMinutes(
+            base.getMinutes() + amount
+          );
+        } else if (
+          unit.startsWith("hour") ||
+          unit.startsWith("hr")
+        ) {
+          base = new Date(now);
+          base.setHours(
+            base.getHours() + amount
+          );
+        } else {
+          base = startOfDay(now);
+
+          if (unit.startsWith("day")) {
+            base.setDate(
+              base.getDate() + amount
+            );
+          } else if (
+            unit.startsWith("week")
+          ) {
+            base.setDate(
+              base.getDate() + (amount * 7)
+            );
+          } else {
+            base.setMonth(
+              base.getMonth() + amount
+            );
+          }
+        }
+
+        const date =
+          parsedTime
+            ? setClock(
+                base,
+                parsedTime.hour,
+                parsedTime.minute
+              )
+            : base;
+
+        return resultFor(
+          text,
+          match,
+          date,
+          isTimedUnit || Boolean(parsedTime)
+        );
+      }
+    }
+  }
+
 
   // ---------------------------------
   // RECURRENCE
@@ -405,7 +495,7 @@ export function parseSmartDate(
           "Every weekday",
           {
             weekdays:
-              jsDays.map(reminderKitWeekday)
+              jsDays.map(eventKitWeekday)
           }
         )
       );
@@ -447,7 +537,7 @@ export function parseSmartDate(
           "Every weekend",
           {
             weekdays:
-              jsDays.map(reminderKitWeekday)
+              jsDays.map(eventKitWeekday)
           }
         )
       );
@@ -508,7 +598,7 @@ export function parseSmartDate(
             `Every ${names.join(", ")}`,
             {
               weekdays:
-                jsDays.map(reminderKitWeekday)
+                jsDays.map(eventKitWeekday)
             }
           )
         );
@@ -588,7 +678,7 @@ export function parseSmartDate(
             weekdays: [
               {
                 day:
-                  reminderKitWeekday(jsDay),
+                  eventKitWeekday(jsDay),
                 weekNumber
               }
             ]
@@ -1289,5 +1379,432 @@ export function parseSmartDate(
     }
   }
 
+
+  // QuickAdd parity: at 3pm / 15:00 / 1600 / noon
+  // Also recognizes a time token at the end of the title.
+  {
+    const explicitRegex = new RegExp(
+      String.raw`\bat\s+(${TIME})\b`,
+      "i"
+    );
+
+    const terminalRegex = new RegExp(
+      String.raw`\b(${TIME})\s*$`,
+      "i"
+    );
+
+    const match =
+      text.match(explicitRegex) ||
+      text.match(terminalRegex);
+
+    if (match) {
+      const parsed =
+        parseTimeToken(match[1]);
+
+      if (parsed) {
+        const date =
+          setClock(
+            now,
+            parsed.hour,
+            parsed.minute
+          );
+
+        return resultFor(
+          text,
+          match,
+          date,
+          true
+        );
+      }
+    }
+  }
+
   return emptyResult(text);
+}
+
+
+// MULTI-TOKEN SMART DATE WRAPPER
+
+function smartRangesOverlap(a, b) {
+  return (
+    a.start < b.end &&
+    b.start < a.end
+  );
+}
+
+function maskSmartRanges(text, ranges = []) {
+  let result = text;
+
+  const valid = ranges
+    .filter(range =>
+      Number.isInteger(range?.start) &&
+      Number.isInteger(range?.end) &&
+      range.start >= 0 &&
+      range.end > range.start &&
+      range.end <= text.length
+    )
+    .sort((a, b) => b.start - a.start);
+
+  for (const range of valid) {
+    result =
+      result.slice(0, range.start) +
+      " ".repeat(range.end - range.start) +
+      result.slice(range.end);
+  }
+
+  return result;
+}
+
+function isSmartTimeOnlyResult(result) {
+  if (
+    !result?.matchedText ||
+    result.recurrence
+  ) {
+    return false;
+  }
+
+  const regex = new RegExp(
+    String.raw`^(?:at\s+)?(?:${TIME})$`,
+    "i"
+  );
+
+  return regex.test(
+    result.matchedText.trim()
+  );
+}
+
+function strongSmartDateExists(text) {
+  const regex = new RegExp(
+    String.raw`\b(?:today|tomorrow|tonight|next\s+(?:weekend|week|month|${WEEKDAY_PATTERN})|(?:this\s+)?weekend|${WEEKDAY_PATTERN}|in\s+(?:a|\d+)\s+(?:minutes?|mins?|hours?|hrs?|days?|weeks?|months?))\b`,
+    "i"
+  );
+
+  return regex.test(text);
+}
+
+function shortAliasInsideResult(result, text) {
+  if (
+    result?.matchedStart == null ||
+    result?.matchedEnd == null
+  ) {
+    return null;
+  }
+
+  const matched =
+    text.slice(
+      result.matchedStart,
+      result.matchedEnd
+    );
+
+  const alias =
+    /\b(?:tod|tom|tmr)\b/i.exec(matched);
+
+  if (!alias) {
+    return null;
+  }
+
+  const start =
+    result.matchedStart +
+    alias.index;
+
+  return {
+    start,
+    end: start + alias[0].length,
+    text: text.slice(
+      start,
+      start + alias[0].length
+    )
+  };
+}
+
+function preferredSmartDateResult(
+  text,
+  now,
+  excludedRanges
+) {
+  let working =
+    maskSmartRanges(
+      text,
+      excludedRanges
+    );
+
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const result =
+      parseSmartDateSingle(
+        working,
+        now
+      );
+
+    if (
+      !result?.matchedText ||
+      result.recurrence ||
+      isSmartTimeOnlyResult(result)
+    ) {
+      return result;
+    }
+
+    const alias =
+      shortAliasInsideResult(
+        result,
+        working
+      );
+
+    if (!alias) {
+      return result;
+    }
+
+    const originalAlias =
+      text.slice(
+        alias.start,
+        alias.end
+      );
+
+    const capitalizedAlias =
+      originalAlias !==
+      originalAlias.toLowerCase();
+
+    const strongerDate =
+      strongSmartDateExists(
+        working
+      );
+
+    if (
+      !capitalizedAlias &&
+      !strongerDate
+    ) {
+      return result;
+    }
+
+    working =
+      maskSmartRanges(
+        working,
+        [alias]
+      );
+  }
+
+  return emptyResult(text);
+}
+
+function independentSmartTime(
+  text,
+  now,
+  excludedRanges
+) {
+  const masked =
+    maskSmartRanges(
+      text,
+      excludedRanges
+    );
+
+  const regex = new RegExp(
+    String.raw`\b(?:at\s+)?(${TIME})\b`,
+    "ig"
+  );
+
+  let match;
+
+  while (
+    (match = regex.exec(masked)) !== null
+  ) {
+    const tokenStart = match.index;
+    const tokenEnd =
+      tokenStart +
+      match[0].length;
+
+    const before =
+      text[tokenStart - 1] || "";
+
+    const after =
+      text[tokenEnd] || "";
+
+    if (
+      before === "/" ||
+      before === "-" ||
+      after === "/" ||
+      after === "-"
+    ) {
+      continue;
+    }
+
+    const parsed =
+      parseTimeToken(
+        match[1]
+      );
+
+    if (!parsed) {
+      continue;
+    }
+
+    const date =
+      setClock(
+        now,
+        parsed.hour,
+        parsed.minute
+      );
+
+    if (!date) {
+      continue;
+    }
+
+    return {
+      kind: "time",
+      start: tokenStart,
+      end: tokenEnd,
+      text:
+        text.slice(
+          tokenStart,
+          tokenEnd
+        ),
+      due: isoDate(date),
+      time: isoTime(date)
+    };
+  }
+
+  return null;
+}
+
+function removeSmartTokenRanges(
+  text,
+  tokens
+) {
+  let result = text;
+
+  const sorted = [...tokens]
+    .sort(
+      (a, b) =>
+        b.start - a.start
+    );
+
+  for (const token of sorted) {
+    result =
+      result.slice(0, token.start) +
+      result.slice(token.end);
+  }
+
+  return result
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function parseSmartDate(
+  text,
+  now = new Date(),
+  excludedRanges = []
+) {
+  const primary =
+    preferredSmartDateResult(
+      text,
+      now,
+      excludedRanges
+    );
+
+  let dateResult = primary;
+
+  if (
+    dateResult?.matchedText &&
+    isSmartTimeOnlyResult(dateResult)
+  ) {
+    dateResult = null;
+  }
+
+  const blockedRanges = [
+    ...excludedRanges
+  ];
+
+  if (
+    dateResult?.matchedStart != null &&
+    dateResult?.matchedEnd != null
+  ) {
+    blockedRanges.push({
+      start: dateResult.matchedStart,
+      end: dateResult.matchedEnd
+    });
+  }
+
+  let timeResult = null;
+
+  if (!dateResult?.time) {
+    timeResult =
+      independentSmartTime(
+        text,
+        now,
+        blockedRanges
+      );
+  }
+
+  const tokens = [];
+
+  if (
+    dateResult?.matchedStart != null &&
+    dateResult?.matchedEnd != null
+  ) {
+    tokens.push({
+      kind:
+        dateResult.recurrence
+          ? "recurrence"
+          : "date",
+      start: dateResult.matchedStart,
+      end: dateResult.matchedEnd,
+      text:
+        text.slice(
+          dateResult.matchedStart,
+          dateResult.matchedEnd
+        )
+    });
+  }
+
+  if (timeResult) {
+    tokens.push({
+      kind: "time",
+      start: timeResult.start,
+      end: timeResult.end,
+      text: timeResult.text
+    });
+  }
+
+  tokens.sort(
+    (a, b) =>
+      a.start - b.start
+  );
+
+  const firstToken =
+    tokens[0] || null;
+
+  const due =
+    dateResult?.due ||
+    timeResult?.due ||
+    null;
+
+  const time =
+    dateResult?.time ||
+    timeResult?.time ||
+    null;
+
+  return {
+    original: text,
+
+    title:
+      removeSmartTokenRanges(
+        text,
+        tokens
+      ),
+
+    matchedText:
+      firstToken?.text || null,
+
+    matchedStart:
+      firstToken?.start ?? null,
+
+    matchedEnd:
+      firstToken?.end ?? null,
+
+    due,
+    time,
+
+    recurrence:
+      dateResult?.recurrence ||
+      null,
+
+    tokens
+  };
 }

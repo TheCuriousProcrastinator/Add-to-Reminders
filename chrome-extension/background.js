@@ -1,9 +1,6 @@
 const SELECTION_MENU =
   "add-selection-to-reminders";
 
-const IMAGE_MENU =
-  "add-image-to-reminders";
-
 async function setupMenus() {
   await chrome.contextMenus.removeAll();
 
@@ -11,16 +8,6 @@ async function setupMenus() {
     id: SELECTION_MENU,
     title: "Add selection to Reminders",
     contexts: ["selection"],
-    documentUrlPatterns: [
-      "http://*/*",
-      "https://*/*"
-    ]
-  });
-
-  chrome.contextMenus.create({
-    id: IMAGE_MENU,
-    title: "Add image to Reminders",
-    contexts: ["image"],
     documentUrlPatterns: [
       "http://*/*",
       "https://*/*"
@@ -139,36 +126,6 @@ function makeTextFragmentUrl(
   );
 }
 
-function filenameFromUrl(rawUrl) {
-  try {
-    const url =
-      new URL(rawUrl);
-
-    const part =
-      url.pathname
-        .split("/")
-        .filter(Boolean)
-        .pop();
-
-    if (!part) {
-      return "Image";
-    }
-
-    return decodeURIComponent(part);
-
-  } catch {
-    return "Image";
-  }
-}
-
-chrome.runtime.onInstalled.addListener(
-  setupMenus
-);
-
-chrome.runtime.onStartup.addListener(
-  setupMenus
-);
-
 setupMenus().catch(console.error);
 
 chrome.contextMenus.onClicked.addListener(
@@ -207,31 +164,6 @@ chrome.contextMenus.onClicked.addListener(
         pendingReminderCapture: {
           title: selection,
           url: deepUrl,
-          createdAt: Date.now()
-        }
-      });
-
-    } else if (
-      info.menuItemId ===
-      IMAGE_MENU
-    ) {
-      const imageUrl =
-        info.srcUrl || "";
-
-      if (!imageUrl) {
-        return;
-      }
-
-      await chrome.storage.local.set({
-        pendingReminderCapture: {
-          title:
-            tab?.title ||
-            filenameFromUrl(imageUrl) ||
-            "Image",
-          url: pageUrl,
-          imageUrl,
-          imageName:
-            filenameFromUrl(imageUrl),
           createdAt: Date.now()
         }
       });

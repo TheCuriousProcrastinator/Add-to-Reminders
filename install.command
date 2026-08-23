@@ -24,24 +24,18 @@ cd "$HELPER"
 
 echo "Building native helper..."
 
-rm -f RichReminder.o
-
-clang \
+xcrun clang \
   -fobjc-arc \
-  -O \
-  -c RichReminder.m \
-  -o RichReminder.o \
-  -F/System/Library/PrivateFrameworks
+  -c RichLink.m \
+  -o bin/RichLink.o
 
 xcrun swiftc \
   main.swift \
-  RichReminder.o \
+  bin/RichLink.o \
+  -import-objc-header RichLinkBridge.h \
   -o bin/add-to-reminders-host \
   -framework EventKit \
   -framework Foundation \
-  -framework AppKit \
-  -F/System/Library/PrivateFrameworks \
-  -framework ReminderKit \
   -Xlinker -sectcreate \
   -Xlinker __TEXT \
   -Xlinker __info_plist \
