@@ -18,6 +18,9 @@ struct ContentView: View {
     @State private var dueDate = Date()
     @State private var hasDueDate = false
     @State private var hasDueTime = false
+    @State private var parsedDateIsActive = false
+    @State private var manualDateOverride = false
+    @State private var manualTimeOverride = false
     @State private var lists: [EKCalendar] = []
     @State private var errorMessage: String?
     @State private var isLoadingLists = false
@@ -123,6 +126,9 @@ struct ContentView: View {
             guard !listID.isEmpty else { return }
             UserDefaults.standard.set(listID, forKey: lastUsedListKey)
         }
+        .onChange(of: title) { _, title in
+            applyNaturalDate(from: title)
+        }
         .onChange(of: hasDueDate) { _, hasDueDate in
             if !hasDueDate {
                 hasDueTime = false
@@ -180,7 +186,9 @@ struct ContentView: View {
     }
 
     private func submitTitle() {
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parsedResult = NaturalDateParser.parse(title)
+        let trimmedTitle = (parsedResult?.title ?? title)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty, !isSaving else { return }
         guard let list = lists.first(where: { $0.calendarIdentifier == selectedListID }) else {
             errorMessage = "Choose a Reminders list before saving."
@@ -217,13 +225,14 @@ struct ContentView: View {
 
                 DatePicker(
                     "Due date",
-                    selection: $dueDate,
+                    selection: manualDateBinding,
                     displayedComponents: .date
                 )
                 .labelsHidden()
                 .datePickerStyle(.field)
 
                 Button {
+                    manualDateOverride = true
                     hasDueDate = false
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -235,6 +244,7 @@ struct ContentView: View {
             .disabled(isSaving)
         } else {
             Button {
+                manualDateOverride = true
                 hasDueDate = true
             } label: {
                 Label("Date", systemImage: "calendar")
@@ -254,13 +264,14 @@ struct ContentView: View {
 
                 DatePicker(
                     "Due time",
-                    selection: $dueDate,
+                    selection: manualTimeBinding,
                     displayedComponents: .hourAndMinute
                 )
                 .labelsHidden()
                 .datePickerStyle(.field)
 
                 Button {
+                    manualTimeOverride = true
                     hasDueTime = false
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -272,6 +283,7 @@ struct ContentView: View {
             .disabled(isSaving)
         } else {
             Button {
+                manualTimeOverride = true
                 hasDueTime = true
             } label: {
                 Label("Time", systemImage: "clock")
@@ -280,6 +292,67 @@ struct ContentView: View {
             .buttonStyle(.borderless)
             .disabled(isSaving)
         }
+    }
+
+    private var manualDateBinding: Binding<Date> {
+        Binding(
+            get: { dueDate },
+            set: {
+                dueDate = $0
+                manualDateOverride = true
+            }
+        )
+    }
+
+    private var manualTimeBinding: Binding<Date> {
+        Binding(
+            get: { dueDate },
+            set: {
+                dueDate = $0
+                manualTimeOverride = true
+            }
+        )
+    }
+
+    private func applyNaturalDate(from title: String) {
+        guard let result = NaturalDateParser.parse(title) else {
+            if parsedDateIsActive {
+                if !manualDateOverride {
+                    hasDueDate = false
+                }
+                if !manualTimeOverride {
+                    hasDueTime = false
+                }
+                parsedDateIsActive = false
+            }
+            return
+        }
+
+        parsedDateIsActive = true
+
+        let calendar = Calendar.current
+        if !manualDateOverride {
+            let timeSource = manualTimeOverride ? dueDate : result.date
+            dueDate = combining(dateFrom: result.date, timeFrom: timeSource, calendar: calendar)
+            hasDueDate = true
+        }
+
+        if !manualTimeOverride {
+            if result.hasTime {
+                dueDate = combining(dateFrom: dueDate, timeFrom: result.date, calendar: calendar)
+                hasDueTime = true
+            } else {
+                hasDueTime = false
+            }
+        }
+    }
+
+    private func combining(dateFrom date: Date, timeFrom time: Date, calendar: Calendar) -> Date {
+        var components = calendar.dateComponents([.year, .month, .day], from: date)
+        let timeComponents = calendar.dateComponents([.hour, .minute], from: time)
+        components.hour = timeComponents.hour
+        components.minute = timeComponents.minute
+        return calendar.date(from: components) ?? date
     }
 
     private var dueDateComponents: DateComponents? {
