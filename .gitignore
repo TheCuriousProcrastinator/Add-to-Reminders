@@ -24,3 +24,6 @@ fda-probe/
 
 # Distribution builds
 dist/
+
+# Separate QuickAdd app
+QuickAdd/
