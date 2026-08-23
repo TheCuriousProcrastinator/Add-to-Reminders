@@ -8,6 +8,11 @@ struct NaturalDateParseResult {
     let recognizedText: String
 }
 
+struct NaturalDateParseResults {
+    let date: NaturalDateParseResult?
+    let time: NaturalDateParseResult?
+}
+
 enum NaturalDateParser {
     private static let weekdays: [String: Int] = [
         "sunday": 1, "sun": 1, "monday": 2, "mon": 2,
@@ -19,15 +24,19 @@ enum NaturalDateParser {
     private static let weekdayPattern = "sunday|sun|monday|mon|tuesday|tue|tues|wednesday|wed|thursday|thu|thur|thurs|friday|fri|saturday|sat"
     private static let timePattern = #"(?:noon|\d{1,2}(?::\d{2})?\s*(?:am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d|(?:[01]\d|2[0-3])[0-5]\d)"#
 
-    static func parse(
+    static func parseResults(
         _ text: String,
         now: Date = Date(),
         calendar: Calendar = .current,
         excluding excludedRanges: [NSRange] = []
-    ) -> NaturalDateParseResult? {
-        parseRelative(text, now: now, calendar: calendar, excluding: excludedRanges)
+    ) -> NaturalDateParseResults {
+        let date = parseRelative(text, now: now, calendar: calendar, excluding: excludedRanges)
             ?? parseNamedDate(text, now: now, calendar: calendar, excluding: excludedRanges)
-            ?? parseTimeOnly(text, now: now, calendar: calendar, excluding: excludedRanges)
+        let timeExclusions = excludedRanges + (date.map { [$0.recognizedRange] } ?? [])
+        let time = date?.hasTime == true
+            ? nil
+            : parseTimeOnly(text, now: now, calendar: calendar, excluding: timeExclusions)
+        return NaturalDateParseResults(date: date, time: time)
     }
 
     private static func parseRelative(

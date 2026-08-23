@@ -32,7 +32,7 @@ struct HighlightingTextField: NSViewRepresentable {
         textView.isVerticallyResizable = false
         textView.isHorizontallyResizable = true
         textView.autoresizingMask = [.height]
-        textView.font = .systemFont(ofSize: 18, weight: .medium)
+        textView.font = .systemFont(ofSize: 20, weight: .medium)
         textView.textColor = .labelColor
         textView.textContainerInset = .zero
         textView.textContainer?.lineFragmentPadding = 0
@@ -118,7 +118,7 @@ struct HighlightingTextField: NSViewRepresentable {
             storage.beginEditing()
             storage.setAttributes(
                 [
-                    .font: NSFont.systemFont(ofSize: 18, weight: .medium),
+                    .font: NSFont.systemFont(ofSize: 20, weight: .medium),
                     .foregroundColor: NSColor.labelColor
                 ],
                 range: fullRange

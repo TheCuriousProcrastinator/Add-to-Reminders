@@ -9,6 +9,7 @@ import SwiftUI
 final class QuickAddPanelController {
     private let panel: NSPanel
     private var didBecomeKeyObserver: NSObjectProtocol?
+    private var hasInitialPlacement = false
 
     init() {
         panel = NSPanel(
@@ -26,15 +27,19 @@ final class QuickAddPanelController {
         panel.hidesOnDeactivate = true
         panel.isReleasedWhenClosed = false
         panel.contentView = NSHostingView(rootView: makeContentView())
-        resizeToFitContent()
     }
 
     func toggle() {
         if isActivelyPresented {
             hide()
         } else {
-            show()
+            present()
         }
+    }
+
+    func present() {
+        guard !isActivelyPresented else { return }
+        show()
     }
 
     private var isActivelyPresented: Bool {
@@ -43,7 +48,8 @@ final class QuickAddPanelController {
 
     private func show() {
         panel.contentView = NSHostingView(rootView: makeContentView())
-        resizeToFitContent()
+        resizeToFitContent(centerOnScreen: !hasInitialPlacement)
+        hasInitialPlacement = true
         observePanelBecomingKey()
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
@@ -64,12 +70,17 @@ final class QuickAddPanelController {
         }
     }
 
-    private func resizeToFitContent() {
+    private func resizeToFitContent(centerOnScreen: Bool = false) {
         guard let contentView = panel.contentView else { return }
         let fittingSize = contentView.fittingSize
         guard fittingSize.width > 0, fittingSize.height > 0 else { return }
+        let topLeft = NSPoint(x: panel.frame.minX, y: panel.frame.maxY)
         panel.setContentSize(NSSize(width: 520, height: ceil(fittingSize.height)))
-        centerOnCurrentScreen()
+        if centerOnScreen {
+            centerOnCurrentScreen()
+        } else {
+            panel.setFrameOrigin(NSPoint(x: topLeft.x, y: topLeft.y - panel.frame.height))
+        }
     }
 
     private func hide() {

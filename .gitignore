@@ -21,3 +21,6 @@ fda-probe/
 
 # Xcode user-specific files
 **/xcuserdata/
+
+# Distribution builds
+dist/

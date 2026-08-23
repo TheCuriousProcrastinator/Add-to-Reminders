@@ -98,6 +98,7 @@ struct ContentView: View {
     @State private var listBeforeSmartSelection = ""
     @State private var applyingSmartListSelection = false
     @State private var recognizedDateResult: NaturalDateParseResult?
+    @State private var recognizedTimeResult: NaturalDateParseResult?
     @State private var recognizedRecurrenceResult: NaturalRecurrenceParseResult?
     @State private var recognizedPriorityResult: NaturalPriorityParseResult?
     @State private var smartPriorityIsActive = false
@@ -107,6 +108,8 @@ struct ContentView: View {
     @State private var focusRequestID = 0
     @State private var notesFocusRequestID = 0
     @State private var notesIsFocused = false
+    @State private var isDatePickerPresented = false
+    @State private var isTimePickerPresented = false
     @State private var lists: [EKCalendar] = []
     @State private var errorMessage: String?
     @State private var isLoadingLists = false
@@ -128,7 +131,7 @@ struct ContentView: View {
             Color(nsColor: .windowBackgroundColor)
                 .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 7) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.blue)
@@ -144,7 +147,7 @@ struct ContentView: View {
                     ZStack(alignment: .leading) {
                         if title.isEmpty {
                             Text("Reminder title")
-                                .font(.system(size: 18, weight: .medium))
+                                .font(.system(size: 20, weight: .medium))
                                 .foregroundStyle(.tertiary)
                                 .allowsHitTesting(false)
                         }
@@ -172,12 +175,12 @@ struct ContentView: View {
                             },
                             onRejectRecognition: rejectNaturalMetadata
                         )
-                        .frame(height: 24)
+                        .frame(height: 27)
                     }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 15)
-                        .padding(.top, 10)
-                        .padding(.bottom, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 2)
+                    .padding(.top, 4)
+                    .padding(.bottom, 3)
 
                     if !slashSuggestions.isEmpty {
                         ScrollView {
@@ -203,50 +206,43 @@ struct ContentView: View {
                             }
                         }
                         .frame(height: min(CGFloat(slashSuggestions.count) * 34, 68))
-                        .background(Color(nsColor: .controlBackgroundColor))
+                        .background(Color.primary.opacity(0.06))
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .padding(.horizontal, 15)
+                        .padding(.horizontal, 2)
                     }
 
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "note.text")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 16)
-                            .padding(.top, 5)
-
-                        ZStack(alignment: .topLeading) {
-                            if notes.isEmpty {
-                                Text("Add notes…")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(.tertiary)
-                                    .padding(.top, 5)
-                                    .padding(.leading, 5)
-                                    .allowsHitTesting(false)
-                            }
-
-                            NotesTextEditor(
-                                text: $notes,
-                                focusRequestID: notesFocusRequestID,
-                                isEditable: !isSaving,
-                                onMoveForward: {
-                                    focusedControl = .priority
-                                },
-                                onMoveBackward: {
-                                    focusRequestID += 1
-                                },
-                                onFocusChange: { isFocused in
-                                    notesIsFocused = isFocused
-                                }
-                            )
+                    ZStack(alignment: .topLeading) {
+                        if notes.isEmpty {
+                            Text("Add notes…")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary.opacity(0.8))
+                                .padding(.top, 4)
+                                .padding(.leading, 5)
+                                .allowsHitTesting(false)
                         }
-                        .frame(height: notesEditorHeight)
+
+                        NotesTextEditor(
+                            text: $notes,
+                            focusRequestID: notesFocusRequestID,
+                            isEditable: !isSaving,
+                            onMoveForward: {
+                                focusedControl = .priority
+                            },
+                            onMoveBackward: {
+                                focusRequestID += 1
+                            },
+                            onFocusChange: { isFocused in
+                                notesIsFocused = isFocused
+                            }
+                        )
                     }
-                    .padding(.horizontal, 15)
-                    .padding(.bottom, 7)
+                    .frame(height: notesEditorHeight)
+                    .padding(.horizontal, 2)
+                    .padding(.bottom, 6)
 
                     Divider()
-                        .padding(.horizontal, 15)
-                        .opacity(0.55)
+                        .padding(.horizontal, 2)
+                        .opacity(0.35)
 
                     MetadataFlowLayout {
                         listControl
@@ -262,11 +258,9 @@ struct ContentView: View {
 
                         priorityControl
                     }
-                    .padding(.horizontal, 15)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 2)
+                    .padding(.vertical, 7)
                 }
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
 
                 if let errorMessage {
                     Text(errorMessage)
@@ -290,7 +284,7 @@ struct ContentView: View {
                 .padding(.horizontal, 2)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 9)
+            .padding(.vertical, 10)
         }
         .frame(width: 520)
         .onReceive(NotificationCenter.default.publisher(for: .quickAddTitleFocusRequested)) { _ in
@@ -422,52 +416,51 @@ struct ContentView: View {
 
     @ViewBuilder
     private var listControl: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "circle.fill")
-                .font(.system(size: 8))
-                .foregroundStyle(.secondary)
-
-            Picker("List", selection: $selectedListID) {
-                if lists.isEmpty {
-                    Text(isLoadingLists ? "Loading…" : "No lists available")
-                        .tag("")
-                } else {
-                    ForEach(lists, id: \.calendarIdentifier) { list in
-                        Text(list.title).tag(list.calendarIdentifier)
+        Menu {
+            if lists.isEmpty {
+                Text(isLoadingLists ? "Loading…" : "No lists available")
+            } else {
+                ForEach(lists, id: \.calendarIdentifier) { list in
+                    Button(list.title) {
+                        selectedListID = list.calendarIdentifier
                     }
                 }
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(maxWidth: 180)
-            .disabled(lists.isEmpty || isSaving)
+        } label: {
+            metadataLabel(listLabel, systemImage: "list.bullet")
         }
+        .menuStyle(.borderlessButton)
+        .disabled(lists.isEmpty || isSaving)
         .metadataItemStyle()
     }
 
     @ViewBuilder
     private var dateControl: some View {
         if hasDueDate {
-            HStack(spacing: 4) {
-                Image(systemName: "calendar")
-                    .foregroundStyle(.secondary)
+            Button {
+                isDatePickerPresented.toggle()
+            } label: {
+                metadataLabel(dueDateLabel, systemImage: "calendar", accented: true)
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $isDatePickerPresented, arrowEdge: .bottom) {
+                VStack(alignment: .leading, spacing: 10) {
+                    DatePicker(
+                        "Due date",
+                        selection: manualDateBinding,
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.field)
 
-                DatePicker(
-                    "Due date",
-                    selection: manualDateBinding,
-                    displayedComponents: .date
-                )
-                .labelsHidden()
-                .datePickerStyle(.field)
+                    Divider()
 
-                Button {
-                    manualDateOverride = true
-                    hasDueDate = false
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
+                    Button("Remove Date", role: .destructive) {
+                        manualDateOverride = true
+                        hasDueDate = false
+                        isDatePickerPresented = false
+                    }
                 }
-                .buttonStyle(.borderless)
+                .padding(12)
             }
             .metadataItemStyle(accented: true)
             .disabled(isSaving)
@@ -476,10 +469,10 @@ struct ContentView: View {
                 manualDateOverride = true
                 hasDueDate = true
             } label: {
-                Label("Date", systemImage: "calendar")
+                metadataLabel("Date", systemImage: "calendar")
             }
+            .buttonStyle(.plain)
             .metadataItemStyle()
-            .buttonStyle(.borderless)
             .disabled(isSaving)
         }
     }
@@ -487,26 +480,30 @@ struct ContentView: View {
     @ViewBuilder
     private var timeControl: some View {
         if hasDueTime {
-            HStack(spacing: 4) {
-                Image(systemName: "clock")
-                    .foregroundStyle(.secondary)
+            Button {
+                isTimePickerPresented.toggle()
+            } label: {
+                metadataLabel(dueTimeLabel, systemImage: "clock", accented: true)
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $isTimePickerPresented, arrowEdge: .bottom) {
+                VStack(alignment: .leading, spacing: 10) {
+                    DatePicker(
+                        "Due time",
+                        selection: manualTimeBinding,
+                        displayedComponents: .hourAndMinute
+                    )
+                    .datePickerStyle(.field)
 
-                DatePicker(
-                    "Due time",
-                    selection: manualTimeBinding,
-                    displayedComponents: .hourAndMinute
-                )
-                .labelsHidden()
-                .datePickerStyle(.field)
+                    Divider()
 
-                Button {
-                    manualTimeOverride = true
-                    hasDueTime = false
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
+                    Button("Remove Time", role: .destructive) {
+                        manualTimeOverride = true
+                        hasDueTime = false
+                        isTimePickerPresented = false
+                    }
                 }
-                .buttonStyle(.borderless)
+                .padding(12)
             }
             .metadataItemStyle(accented: true)
             .disabled(isSaving)
@@ -515,18 +512,16 @@ struct ContentView: View {
                 manualTimeOverride = true
                 hasDueTime = true
             } label: {
-                Label("Time", systemImage: "clock")
+                metadataLabel("Time", systemImage: "clock")
             }
+            .buttonStyle(.plain)
             .metadataItemStyle()
-            .buttonStyle(.borderless)
             .disabled(isSaving)
         }
     }
 
     private var recurrenceControl: some View {
-        Label(recurrenceLabel, systemImage: "repeat")
-            .lineLimit(1)
-            .truncationMode(.tail)
+        metadataLabel(recurrenceLabel, systemImage: "repeat", accented: true)
             .frame(maxWidth: 180)
             .metadataItemStyle(accented: true)
     }
@@ -539,22 +534,54 @@ struct ContentView: View {
     }
 
     private var priorityControl: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "flag")
-                .foregroundStyle(.secondary)
-
-            Picker("Priority", selection: $selectedPriority) {
-                Text("Priority").tag(0)
-                Text("High").tag(1)
-                Text("Medium").tag(5)
-                Text("Low").tag(9)
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .focused($focusedControl, equals: .priority)
-            .disabled(isSaving)
+        Menu {
+            Button("Priority") { selectedPriority = 0 }
+            Button("High") { selectedPriority = 1 }
+            Button("Medium") { selectedPriority = 5 }
+            Button("Low") { selectedPriority = 9 }
+        } label: {
+            metadataLabel(priorityLabel, systemImage: "flag", accented: selectedPriority != 0)
         }
+        .menuStyle(.borderlessButton)
+        .focused($focusedControl, equals: .priority)
+        .disabled(isSaving)
         .metadataItemStyle(accented: selectedPriority != 0)
+    }
+
+    private var listLabel: String {
+        if isLoadingLists { return "Loading…" }
+        return lists.first(where: { $0.calendarIdentifier == selectedListID })?.title ?? "List"
+    }
+
+    private var dueDateLabel: String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(dueDate) { return "Today" }
+        if calendar.isDateInTomorrow(dueDate) { return "Tomorrow" }
+        return dueDate.formatted(.dateTime.month(.abbreviated).day())
+    }
+
+    private var dueTimeLabel: String {
+        dueDate.formatted(date: .omitted, time: .shortened)
+    }
+
+    private var priorityLabel: String {
+        switch selectedPriority {
+        case 1: return "High"
+        case 5: return "Medium"
+        case 9: return "Low"
+        default: return "Priority"
+        }
+    }
+
+    private func metadataLabel(
+        _ title: String,
+        systemImage: String,
+        accented: Bool = false
+    ) -> some View {
+        Label(title, systemImage: systemImage)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .foregroundStyle(accented ? Color.blue : Color.secondary)
     }
 
     private var notesEditorHeight: CGFloat {
@@ -587,19 +614,37 @@ struct ContentView: View {
         if let recurrenceResult = acceptedNaturalRecurrence(in: title) {
             recognizedRecurrenceResult = recurrenceResult
             recognizedDateResult = nil
+            recognizedTimeResult = acceptedNaturalTime(
+                in: title,
+                excluding: excludedRecognitionRanges(in: title) + [recurrenceResult.recognizedRange]
+            )
             applyParsedDate(recurrenceResult.date, hasTime: recurrenceResult.hasTime)
+            if let timeResult = recognizedTimeResult {
+                applyParsedTime(timeResult.date)
+            }
             return
         }
 
         recognizedRecurrenceResult = nil
-        guard let dateResult = acceptedNaturalDate(in: title) else {
+        let results = acceptedNaturalDateAndTime(in: title)
+        recognizedDateResult = results.date
+        recognizedTimeResult = results.time
+
+        guard let dateResult = results.date else {
+            if let timeResult = results.time {
+                applyParsedDate(timeResult.date, hasTime: true)
+                return
+            }
             recognizedDateResult = nil
+            recognizedTimeResult = nil
             clearProvisionalDate()
             return
         }
 
-        recognizedDateResult = dateResult
         applyParsedDate(dateResult.date, hasTime: dateResult.hasTime)
+        if let timeResult = results.time {
+            applyParsedTime(timeResult.date)
+        }
     }
 
     private func applyParsedDate(_ parsedDate: Date, hasTime: Bool) {
@@ -620,17 +665,28 @@ struct ContentView: View {
         }
     }
 
+    private func applyParsedTime(_ parsedTime: Date) {
+        guard !manualTimeOverride else { return }
+        dueDate = combining(dateFrom: dueDate, timeFrom: parsedTime, calendar: .current)
+        hasDueTime = true
+    }
+
     private func acceptedNaturalRecurrence(in title: String) -> NaturalRecurrenceParseResult? {
         NaturalRecurrenceParser.parse(title, excluding: excludedRecognitionRanges(in: title))
     }
 
-    private func acceptedNaturalDate(in title: String) -> NaturalDateParseResult? {
-        NaturalDateParser.parse(title, excluding: excludedRecognitionRanges(in: title))
+    private func acceptedNaturalDateAndTime(in title: String) -> NaturalDateParseResults {
+        NaturalDateParser.parseResults(title, excluding: excludedRecognitionRanges(in: title))
+    }
+
+    private func acceptedNaturalTime(in title: String, excluding excludedRanges: [NSRange]) -> NaturalDateParseResult? {
+        NaturalDateParser.parseResults(title, excluding: excludedRanges).time
     }
 
     private var recognizedRanges: [NSRange] {
         [
             recognizedRecurrenceResult?.recognizedRange ?? recognizedDateResult?.recognizedRange,
+            recognizedTimeResult?.recognizedRange,
             recognizedPriorityResult?.recognizedRange
         ].compactMap { $0 }
     }
@@ -697,6 +753,8 @@ struct ContentView: View {
             text = recognizedRecurrenceResult?.recognizedText
         } else if recognizedDateResult.map({ NSEqualRanges($0.recognizedRange, range) }) == true {
             text = recognizedDateResult?.recognizedText
+        } else if recognizedTimeResult.map({ NSEqualRanges($0.recognizedRange, range) }) == true {
+            text = recognizedTimeResult?.recognizedText
         } else {
             text = nil
         }
