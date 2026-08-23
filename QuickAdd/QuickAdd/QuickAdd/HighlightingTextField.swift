@@ -4,12 +4,13 @@ import SwiftUI
 struct HighlightingTextField: NSViewRepresentable {
     @Binding var text: String
 
-    let recognizedRange: NSRange?
+    let recognizedRanges: [NSRange]
     let focusRequestID: Int
     let onSubmit: () -> Void
     let onEscape: () -> Void
     let onMoveSuggestion: (Int) -> Bool
-    let onRejectRecognition: () -> Void
+    let onMoveToNotes: () -> Void
+    let onRejectRecognition: (NSRange) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -42,8 +43,14 @@ struct HighlightingTextField: NSViewRepresentable {
             height: scrollView.contentSize.height
         )
         textView.textContainer?.widthTracksTextView = false
-        textView.onRecognizedClick = {
-            context.coordinator.parent.onRejectRecognition()
+        textView.onRecognizedClick = { range in
+            context.coordinator.parent.onRejectRecognition(range)
+        }
+        textView.onSubmit = {
+            context.coordinator.parent.onSubmit()
+        }
+        textView.onMoveToNotes = {
+            context.coordinator.parent.onMoveToNotes()
         }
 
         scrollView.documentView = textView
@@ -63,7 +70,7 @@ struct HighlightingTextField: NSViewRepresentable {
             textView.setSelectedRange(NSRange(location: location, length: length))
         }
 
-        textView.recognizedRange = recognizedRange
+        textView.recognizedRanges = recognizedRanges
         context.coordinator.applyHighlight(to: textView)
 
         if context.coordinator.lastFocusRequestID != focusRequestID {
@@ -116,7 +123,7 @@ struct HighlightingTextField: NSViewRepresentable {
                 ],
                 range: fullRange
             )
-            if let range = parent.recognizedRange, NSMaxRange(range) <= storage.length {
+            for range in parent.recognizedRanges where NSMaxRange(range) <= storage.length {
                 storage.addAttributes(
                     [
                         .backgroundColor: NSColor.systemBlue.withAlphaComponent(0.16),
@@ -131,19 +138,39 @@ struct HighlightingTextField: NSViewRepresentable {
 }
 
 private final class RecognitionTextView: NSTextView {
-    var recognizedRange: NSRange?
-    var onRecognizedClick: (() -> Void)?
+    var recognizedRanges: [NSRange] = []
+    var onRecognizedClick: ((NSRange) -> Void)?
+    var onSubmit: (() -> Void)?
+    var onMoveToNotes: (() -> Void)?
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 36, !hasMarkedText() {
+            onSubmit?()
+            return
+        }
+        if event.keyCode == 48 {
+            if event.modifierFlags.contains(.shift) {
+                window?.selectPreviousKeyView(self)
+            } else {
+                onMoveToNotes?()
+            }
+            return
+        }
+
+        super.keyDown(with: event)
+    }
 
     override func mouseDown(with event: NSEvent) {
-        let clickedRecognizedText = recognizedRange.map { range in
-            characterIndex(at: event.locationInWindow).map { NSLocationInRange($0, range) } ?? false
-        } ?? false
+        let characterIndex = characterIndex(at: event.locationInWindow)
+        let clickedRecognizedRange = recognizedRanges.first { range in
+            characterIndex.map { NSLocationInRange($0, range) } ?? false
+        }
 
         super.mouseDown(with: event)
 
-        if clickedRecognizedText {
+        if let clickedRecognizedRange {
             DispatchQueue.main.async { [weak self] in
-                self?.onRecognizedClick?()
+                self?.onRecognizedClick?(clickedRecognizedRange)
             }
         }
     }
@@ -163,5 +190,120 @@ private final class RecognitionTextView: NSTextView {
         )
         guard glyphRect.insetBy(dx: -2, dy: -2).contains(containerPoint) else { return nil }
         return layoutManager.characterIndexForGlyph(at: glyphIndex)
+    }
+}
+
+struct NotesTextEditor: NSViewRepresentable {
+    @Binding var text: String
+
+    let focusRequestID: Int
+    let isEditable: Bool
+    let onMoveForward: () -> Void
+    let onMoveBackward: () -> Void
+    let onFocusChange: (Bool) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.hasHorizontalScroller = false
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+
+        let textView = NavigatingNotesTextView()
+        textView.delegate = context.coordinator
+        textView.drawsBackground = false
+        textView.isRichText = false
+        textView.importsGraphics = false
+        textView.allowsUndo = true
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.font = .systemFont(ofSize: 13)
+        textView.textColor = .labelColor
+        textView.textContainerInset = NSSize(width: 5, height: 2)
+        textView.textContainer?.lineFragmentPadding = 0
+        textView.textContainer?.widthTracksTextView = true
+        textView.onMoveForward = {
+            context.coordinator.parent.onMoveForward()
+        }
+        textView.onMoveBackward = {
+            context.coordinator.parent.onMoveBackward()
+        }
+        textView.onFocusChange = { isFocused in
+            context.coordinator.parent.onFocusChange(isFocused)
+        }
+
+        scrollView.documentView = textView
+        return scrollView
+    }
+
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        context.coordinator.parent = self
+        guard let textView = scrollView.documentView as? NavigatingNotesTextView else { return }
+
+        if textView.string != text {
+            textView.string = text
+        }
+        textView.isEditable = isEditable
+
+        if context.coordinator.lastFocusRequestID != focusRequestID {
+            context.coordinator.lastFocusRequestID = focusRequestID
+            textView.window?.makeFirstResponder(textView)
+        }
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: NotesTextEditor
+        var lastFocusRequestID: Int
+
+        init(_ parent: NotesTextEditor) {
+            self.parent = parent
+            lastFocusRequestID = parent.focusRequestID
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            parent.text = textView.string
+        }
+    }
+}
+
+private final class NavigatingNotesTextView: NSTextView {
+    var onMoveForward: (() -> Void)?
+    var onMoveBackward: (() -> Void)?
+    var onFocusChange: ((Bool) -> Void)?
+
+    override func becomeFirstResponder() -> Bool {
+        let becameFirstResponder = super.becomeFirstResponder()
+        if becameFirstResponder {
+            onFocusChange?(true)
+        }
+        return becameFirstResponder
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let resignedFirstResponder = super.resignFirstResponder()
+        if resignedFirstResponder {
+            onFocusChange?(false)
+        }
+        return resignedFirstResponder
+    }
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 48 {
+            if event.modifierFlags.contains(.shift) {
+                onMoveBackward?()
+            } else {
+                onMoveForward?()
+            }
+            return
+        }
+
+        super.keyDown(with: event)
     }
 }

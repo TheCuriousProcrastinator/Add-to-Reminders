@@ -24,13 +24,69 @@ private struct RejectedRecognitionOccurrence: Equatable {
     let text: String
 }
 
+private enum QuickAddFocus: Hashable {
+    case priority
+    case addReminder
+}
+
+private struct MetadataFlowLayout: Layout {
+    var spacing: CGFloat = 9
+    var lineSpacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maximumWidth = proposal.width ?? .greatestFiniteMagnitude
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+        var rowWidth: CGFloat = 0
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if rowWidth > 0, rowWidth + spacing + size.width > maximumWidth {
+                width = max(width, rowWidth)
+                height += rowHeight + lineSpacing
+                rowWidth = 0
+                rowHeight = 0
+            }
+            rowWidth += rowWidth > 0 ? spacing : 0
+            rowWidth += size.width
+            rowHeight = max(rowHeight, size.height)
+        }
+
+        return CGSize(width: max(width, rowWidth), height: height + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var origin = bounds.origin
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if origin.x > bounds.minX, origin.x + spacing + size.width > bounds.maxX {
+                origin.x = bounds.minX
+                origin.y += rowHeight + lineSpacing
+                rowHeight = 0
+            }
+            if origin.x > bounds.minX {
+                origin.x += spacing
+            }
+            subview.place(at: origin, proposal: ProposedViewSize(size))
+            origin.x += size.width
+            rowHeight = max(rowHeight, size.height)
+        }
+    }
+}
+
 struct ContentView: View {
     private let onSubmit: () -> Void
     private let onEscape: () -> Void
+    private let onLayoutChange: () -> Void
     private let lastUsedListKey = "lastUsedReminderListIdentifier"
 
     @State private var title = ""
+    @State private var notes = ""
     @State private var selectedListID = ""
+    @State private var selectedPriority = 0
     @State private var dueDate = Date()
     @State private var hasDueDate = false
     @State private var hasDueTime = false
@@ -43,16 +99,28 @@ struct ContentView: View {
     @State private var applyingSmartListSelection = false
     @State private var recognizedDateResult: NaturalDateParseResult?
     @State private var recognizedRecurrenceResult: NaturalRecurrenceParseResult?
+    @State private var recognizedPriorityResult: NaturalPriorityParseResult?
+    @State private var smartPriorityIsActive = false
+    @State private var priorityBeforeSmartSelection = 0
+    @State private var applyingSmartPrioritySelection = false
     @State private var rejectedRecognitionOccurrences: [RejectedRecognitionOccurrence] = []
     @State private var focusRequestID = 0
+    @State private var notesFocusRequestID = 0
+    @State private var notesIsFocused = false
     @State private var lists: [EKCalendar] = []
     @State private var errorMessage: String?
     @State private var isLoadingLists = false
     @State private var isSaving = false
     @State private var eventStore = EKEventStore()
-    init(onSubmit: @escaping () -> Void = {}, onEscape: @escaping () -> Void = {}) {
+    @FocusState private var focusedControl: QuickAddFocus?
+    init(
+        onSubmit: @escaping () -> Void = {},
+        onEscape: @escaping () -> Void = {},
+        onLayoutChange: @escaping () -> Void = {}
+    ) {
         self.onSubmit = onSubmit
         self.onEscape = onEscape
+        self.onLayoutChange = onLayoutChange
     }
 
     var body: some View {
@@ -60,19 +128,19 @@ struct ContentView: View {
             Color(nsColor: .windowBackgroundColor)
                 .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 7) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.blue)
-                        .font(.system(size: 20))
+                        .font(.system(size: 17))
 
                     Text("Add to Reminders")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 2)
 
-                VStack(alignment: .leading, spacing: 7) {
+                VStack(alignment: .leading, spacing: 0) {
                     ZStack(alignment: .leading) {
                         if title.isEmpty {
                             Text("Reminder title")
@@ -83,8 +151,7 @@ struct ContentView: View {
 
                         HighlightingTextField(
                             text: $title,
-                            recognizedRange: recognizedRecurrenceResult?.recognizedRange
-                                ?? recognizedDateResult?.recognizedRange,
+                            recognizedRanges: recognizedRanges,
                             focusRequestID: focusRequestID,
                             onSubmit: {
                                 if !acceptSuggestion() {
@@ -99,13 +166,18 @@ struct ContentView: View {
                                 }
                             },
                             onMoveSuggestion: moveSuggestionSelection,
+                            onMoveToNotes: {
+                                hideSlashSuggestions()
+                                notesFocusRequestID += 1
+                            },
                             onRejectRecognition: rejectNaturalMetadata
                         )
                         .frame(height: 24)
                     }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 15)
-                        .padding(.top, 11)
+                        .padding(.top, 10)
+                        .padding(.bottom, 4)
 
                     if !slashSuggestions.isEmpty {
                         ScrollView {
@@ -136,7 +208,47 @@ struct ContentView: View {
                         .padding(.horizontal, 15)
                     }
 
-                    HStack(spacing: 7) {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "note.text")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16)
+                            .padding(.top, 5)
+
+                        ZStack(alignment: .topLeading) {
+                            if notes.isEmpty {
+                                Text("Add notes…")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.tertiary)
+                                    .padding(.top, 5)
+                                    .padding(.leading, 5)
+                                    .allowsHitTesting(false)
+                            }
+
+                            NotesTextEditor(
+                                text: $notes,
+                                focusRequestID: notesFocusRequestID,
+                                isEditable: !isSaving,
+                                onMoveForward: {
+                                    focusedControl = .priority
+                                },
+                                onMoveBackward: {
+                                    focusRequestID += 1
+                                },
+                                onFocusChange: { isFocused in
+                                    notesIsFocused = isFocused
+                                }
+                            )
+                        }
+                        .frame(height: notesEditorHeight)
+                    }
+                    .padding(.horizontal, 15)
+                    .padding(.bottom, 7)
+
+                    Divider()
+                        .padding(.horizontal, 15)
+                        .opacity(0.55)
+
+                    MetadataFlowLayout {
                         listControl
                         dateControl
 
@@ -147,9 +259,11 @@ struct ContentView: View {
                         if recognizedRecurrenceResult != nil {
                             recurrenceControl
                         }
+
+                        priorityControl
                     }
                     .padding(.horizontal, 15)
-                    .padding(.bottom, 11)
+                    .padding(.vertical, 8)
                 }
                 .background(Color(nsColor: .controlBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
@@ -168,12 +282,15 @@ struct ContentView: View {
                     Button(isSaving ? "Adding…" : "Add Reminder", action: submitTitle)
                         .buttonStyle(.borderedProminent)
                         .tint(.blue)
+                        .controlSize(.regular)
+                        .keyboardShortcut(.return, modifiers: .command)
+                        .focused($focusedControl, equals: .addReminder)
                         .disabled(isSaving || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedListID.isEmpty)
                 }
                 .padding(.horizontal, 2)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 9)
         }
         .frame(width: 520)
         .onReceive(NotificationCenter.default.publisher(for: .quickAddTitleFocusRequested)) { _ in
@@ -185,17 +302,31 @@ struct ContentView: View {
             UserDefaults.standard.set(listID, forKey: lastUsedListKey)
             updateInlineListForManualSelection(listID)
         }
+        .onChange(of: selectedPriority) { _, priority in
+            if smartPriorityIsActive, !applyingSmartPrioritySelection {
+                priorityBeforeSmartSelection = priority
+                smartPriorityIsActive = false
+            }
+            onLayoutChange()
+        }
         .onChange(of: title) { previousTitle, title in
             updateRejectedRecognitionOccurrences(from: previousTitle, to: title)
             applySmartList(from: title)
             updateSlashSuggestions()
             applyNaturalMetadata(from: title)
+            applyNaturalPriority(from: title)
+            onLayoutChange()
         }
         .onChange(of: hasDueDate) { _, hasDueDate in
             if !hasDueDate {
                 hasDueTime = false
             }
+            onLayoutChange()
         }
+        .onChange(of: hasDueTime) { _, _ in onLayoutChange() }
+        .onChange(of: notes) { _, _ in onLayoutChange() }
+        .onChange(of: notesIsFocused) { _, _ in onLayoutChange() }
+        .onChange(of: errorMessage) { _, _ in onLayoutChange() }
         .task {
             loadLists()
         }
@@ -251,11 +382,7 @@ struct ContentView: View {
     }
 
     private func submitTitle() {
-        let titleWithoutMetadata = recognizedRecurrenceResult?.title
-            ?? recognizedDateResult?.title
-            ?? title
-        let trimmedTitle = SlashListParser.removingMatchedList(from: titleWithoutMetadata, lists: lists)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedTitle = cleanedTitleForSave
         guard !trimmedTitle.isEmpty, !isSaving else { return }
         guard let list = lists.first(where: { $0.calendarIdentifier == selectedListID }) else {
             errorMessage = "Choose a Reminders list before saving."
@@ -269,6 +396,11 @@ struct ContentView: View {
         reminder.title = trimmedTitle
         reminder.calendar = list
         reminder.dueDateComponents = dueDateComponents
+        let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedNotes.isEmpty {
+            reminder.notes = trimmedNotes
+        }
+        reminder.priority = selectedPriority
         if let recurrence = recognizedRecurrenceResult?.recurrence {
             reminder.addRecurrenceRule(eventKitRule(for: recurrence))
         }
@@ -276,9 +408,11 @@ struct ContentView: View {
         do {
             try eventStore.save(reminder, commit: true)
             title = ""
+            notes = ""
             dueDate = Date()
             hasDueDate = false
             hasDueTime = false
+            selectedPriority = 0
             onSubmit()
         } catch {
             isSaving = false
@@ -290,8 +424,8 @@ struct ContentView: View {
     private var listControl: some View {
         HStack(spacing: 4) {
             Image(systemName: "circle.fill")
-                .font(.system(size: 10))
-                .foregroundStyle(.blue)
+                .font(.system(size: 8))
+                .foregroundStyle(.secondary)
 
             Picker("List", selection: $selectedListID) {
                 if lists.isEmpty {
@@ -305,9 +439,10 @@ struct ContentView: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
+            .frame(maxWidth: 180)
             .disabled(lists.isEmpty || isSaving)
         }
-        .chipStyle()
+        .metadataItemStyle()
     }
 
     @ViewBuilder
@@ -334,7 +469,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderless)
             }
-            .chipStyle()
+            .metadataItemStyle(accented: true)
             .disabled(isSaving)
         } else {
             Button {
@@ -343,7 +478,7 @@ struct ContentView: View {
             } label: {
                 Label("Date", systemImage: "calendar")
             }
-            .chipStyle()
+            .metadataItemStyle()
             .buttonStyle(.borderless)
             .disabled(isSaving)
         }
@@ -373,7 +508,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderless)
             }
-            .chipStyle()
+            .metadataItemStyle(accented: true)
             .disabled(isSaving)
         } else {
             Button {
@@ -382,7 +517,7 @@ struct ContentView: View {
             } label: {
                 Label("Time", systemImage: "clock")
             }
-            .chipStyle()
+            .metadataItemStyle()
             .buttonStyle(.borderless)
             .disabled(isSaving)
         }
@@ -391,7 +526,9 @@ struct ContentView: View {
     private var recurrenceControl: some View {
         Label(recurrenceLabel, systemImage: "repeat")
             .lineLimit(1)
-            .chipStyle()
+            .truncationMode(.tail)
+            .frame(maxWidth: 180)
+            .metadataItemStyle(accented: true)
     }
 
     private var recurrenceLabel: String {
@@ -399,6 +536,31 @@ struct ContentView: View {
             return "Repeating"
         }
         return first.uppercased() + label.dropFirst()
+    }
+
+    private var priorityControl: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "flag")
+                .foregroundStyle(.secondary)
+
+            Picker("Priority", selection: $selectedPriority) {
+                Text("Priority").tag(0)
+                Text("High").tag(1)
+                Text("Medium").tag(5)
+                Text("Low").tag(9)
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .focused($focusedControl, equals: .priority)
+            .disabled(isSaving)
+        }
+        .metadataItemStyle(accented: selectedPriority != 0)
+    }
+
+    private var notesEditorHeight: CGFloat {
+        guard !notes.isEmpty || notesIsFocused else { return 26 }
+        let lineCount = max(notes.split(separator: "\n", omittingEmptySubsequences: false).count, 1)
+        return min(max(CGFloat(lineCount) * 18 + 8, 32), 76)
     }
 
     private var manualDateBinding: Binding<Date> {
@@ -466,6 +628,59 @@ struct ContentView: View {
         NaturalDateParser.parse(title, excluding: excludedRecognitionRanges(in: title))
     }
 
+    private var recognizedRanges: [NSRange] {
+        [
+            recognizedRecurrenceResult?.recognizedRange ?? recognizedDateResult?.recognizedRange,
+            recognizedPriorityResult?.recognizedRange
+        ].compactMap { $0 }
+    }
+
+    private var cleanedTitleForSave: String {
+        var ranges = recognizedRanges
+        if let listMatch = SlashListParser.matchingList(in: title, lists: lists) {
+            ranges.append(NSRange(listMatch.range, in: title))
+        }
+        ranges.sort { $0.location > $1.location }
+
+        var cleaned = title
+        for range in ranges {
+            guard let stringRange = Range(range, in: cleaned) else { continue }
+            cleaned.replaceSubrange(stringRange, with: " ")
+        }
+        return cleaned
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func applyNaturalPriority(from title: String) {
+        guard let result = NaturalPriorityParser.parse(
+            title,
+            excluding: excludedRecognitionRanges(in: title)
+        ) else {
+            recognizedPriorityResult = nil
+            if smartPriorityIsActive {
+                applyingSmartPrioritySelection = true
+                selectedPriority = priorityBeforeSmartSelection
+                DispatchQueue.main.async {
+                    applyingSmartPrioritySelection = false
+                }
+                smartPriorityIsActive = false
+            }
+            return
+        }
+
+        recognizedPriorityResult = result
+        if !smartPriorityIsActive {
+            priorityBeforeSmartSelection = selectedPriority
+            smartPriorityIsActive = true
+        }
+        applyingSmartPrioritySelection = true
+        selectedPriority = result.value
+        DispatchQueue.main.async {
+            applyingSmartPrioritySelection = false
+        }
+    }
+
     private func excludedRecognitionRanges(in title: String) -> [NSRange] {
         var excludedRanges = rejectedRecognitionOccurrences.map(\.range)
         if let fragment = SlashListParser.fragment(in: title) {
@@ -474,16 +689,25 @@ struct ContentView: View {
         return excludedRanges
     }
 
-    private func rejectNaturalMetadata() {
-        let range = recognizedRecurrenceResult?.recognizedRange ?? recognizedDateResult?.recognizedRange
-        let text = recognizedRecurrenceResult?.recognizedText ?? recognizedDateResult?.recognizedText
-        guard let range, let text else { return }
+    private func rejectNaturalMetadata(at range: NSRange) {
+        let text: String?
+        if recognizedPriorityResult.map({ NSEqualRanges($0.recognizedRange, range) }) == true {
+            text = recognizedPriorityResult?.recognizedText
+        } else if recognizedRecurrenceResult.map({ NSEqualRanges($0.recognizedRange, range) }) == true {
+            text = recognizedRecurrenceResult?.recognizedText
+        } else if recognizedDateResult.map({ NSEqualRanges($0.recognizedRange, range) }) == true {
+            text = recognizedDateResult?.recognizedText
+        } else {
+            text = nil
+        }
+        guard let text else { return }
 
         let rejection = RejectedRecognitionOccurrence(range: range, text: text)
         if !rejectedRecognitionOccurrences.contains(rejection) {
             rejectedRecognitionOccurrences.append(rejection)
         }
         applyNaturalMetadata(from: title)
+        applyNaturalPriority(from: title)
     }
 
     private func updateRejectedRecognitionOccurrences(from oldTitle: String, to newTitle: String) {
@@ -725,14 +949,12 @@ struct ContentView: View {
 }
 
 private extension View {
-    func chipStyle() -> some View {
+    func metadataItemStyle(accented: Bool = false) -> some View {
         self
             .font(.system(size: 13, weight: .medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 4)
-            .background(Color.blue.opacity(0.11))
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .foregroundStyle(accented ? Color.blue : Color.secondary)
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
     }
 }
 

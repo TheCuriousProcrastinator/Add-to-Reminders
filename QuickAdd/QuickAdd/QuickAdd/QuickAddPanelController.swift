@@ -12,7 +12,7 @@ final class QuickAddPanelController {
 
     init() {
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 280),
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 1),
             styleMask: [.titled, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -26,6 +26,7 @@ final class QuickAddPanelController {
         panel.hidesOnDeactivate = true
         panel.isReleasedWhenClosed = false
         panel.contentView = NSHostingView(rootView: makeContentView())
+        resizeToFitContent()
     }
 
     func toggle() {
@@ -42,7 +43,7 @@ final class QuickAddPanelController {
 
     private func show() {
         panel.contentView = NSHostingView(rootView: makeContentView())
-        centerOnCurrentScreen()
+        resizeToFitContent()
         observePanelBecomingKey()
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
@@ -51,8 +52,24 @@ final class QuickAddPanelController {
     private func makeContentView() -> ContentView {
         ContentView(
             onSubmit: { [weak self] in self?.hide() },
-            onEscape: { [weak self] in self?.hide() }
+            onEscape: { [weak self] in self?.hide() },
+            onLayoutChange: { [weak self] in self?.resizeToFitContentAfterLayout() }
         )
+    }
+
+    private func resizeToFitContentAfterLayout() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.panel.isVisible else { return }
+            self.resizeToFitContent()
+        }
+    }
+
+    private func resizeToFitContent() {
+        guard let contentView = panel.contentView else { return }
+        let fittingSize = contentView.fittingSize
+        guard fittingSize.width > 0, fittingSize.height > 0 else { return }
+        panel.setContentSize(NSSize(width: 520, height: ceil(fittingSize.height)))
+        centerOnCurrentScreen()
     }
 
     private func hide() {
