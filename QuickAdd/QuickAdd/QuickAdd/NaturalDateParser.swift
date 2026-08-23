@@ -4,6 +4,8 @@ struct NaturalDateParseResult {
     let title: String
     let date: Date
     let hasTime: Bool
+    let recognizedRange: NSRange
+    let recognizedText: String
 }
 
 enum NaturalDateParser {
@@ -17,15 +19,25 @@ enum NaturalDateParser {
     private static let weekdayPattern = "sunday|sun|monday|mon|tuesday|tue|tues|wednesday|wed|thursday|thu|thur|thurs|friday|fri|saturday|sat"
     private static let timePattern = #"(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d|(?:[01]\d|2[0-3])[0-5]\d)"#
 
-    static func parse(_ text: String, now: Date = Date(), calendar: Calendar = .current) -> NaturalDateParseResult? {
-        parseRelative(text, now: now, calendar: calendar)
-            ?? parseNamedDate(text, now: now, calendar: calendar)
-            ?? parseTimeOnly(text, now: now, calendar: calendar)
+    static func parse(
+        _ text: String,
+        now: Date = Date(),
+        calendar: Calendar = .current,
+        excluding excludedRanges: [NSRange] = []
+    ) -> NaturalDateParseResult? {
+        parseRelative(text, now: now, calendar: calendar, excluding: excludedRanges)
+            ?? parseNamedDate(text, now: now, calendar: calendar, excluding: excludedRanges)
+            ?? parseTimeOnly(text, now: now, calendar: calendar, excluding: excludedRanges)
     }
 
-    private static func parseRelative(_ text: String, now: Date, calendar: Calendar) -> NaturalDateParseResult? {
+    private static func parseRelative(
+        _ text: String,
+        now: Date,
+        calendar: Calendar,
+        excluding excludedRanges: [NSRange]
+    ) -> NaturalDateParseResult? {
         let pattern = #"\bin\s+(?:(a)|(\d+))\s+(minutes?|mins?|hours?|hrs?|days?|weeks?|months?)(?:\s+(?:at\s+)?("# + timePattern + #"))?\b"#
-        guard let match = firstMatch(pattern, in: text),
+        guard let match = firstMatch(pattern, in: text, excluding: excludedRanges),
               let unit = capture(3, from: match, in: text)?.lowercased() else { return nil }
 
         let amount = capture(1, from: match, in: text) == "a" ? 1 : Int(capture(2, from: match, in: text) ?? "")
@@ -52,24 +64,31 @@ enum NaturalDateParser {
         return result(for: match, in: text, date: date, hasTime: isTimedUnit || time != nil)
     }
 
-    private static func parseNamedDate(_ text: String, now: Date, calendar: Calendar) -> NaturalDateParseResult? {
+    private static func parseNamedDate(
+        _ text: String,
+        now: Date,
+        calendar: Calendar,
+        excluding excludedRanges: [NSRange]
+    ) -> NaturalDateParseResult? {
         let specialPattern = #"\b(next\s+weekend|(?:this\s+)?weekend|next\s+week|next\s+month)(?:\s+(?:at\s+)?("# + timePattern + #"))?\b"#
-        if let match = firstMatch(specialPattern, in: text),
+        if let match = firstMatch(specialPattern, in: text, excluding: excludedRanges),
            let token = capture(1, from: match, in: text),
            let date = resolveSpecialDate(token, now: now, calendar: calendar) {
             return result(for: match, in: text, date: applyingTime(capture(2, from: match, in: text), to: date, calendar: calendar))
         }
 
         let nextWeekdayPattern = #"\bnext\s+("# + weekdayPattern + #")(?:\s+(?:at\s+)?("# + timePattern + #"))?\b"#
-        if let match = firstMatch(nextWeekdayPattern, in: text),
+        if let match = firstMatch(nextWeekdayPattern, in: text, excluding: excludedRanges),
            let token = capture(1, from: match, in: text),
            let date = resolveWeekday(token, now: now, calendar: calendar, allowToday: false) {
             return result(for: match, in: text, date: applyingTime(capture(2, from: match, in: text), to: date, calendar: calendar))
         }
 
-        let datePattern = "today|tod|tomorrow|tom|tmr|tonight|\(weekdayPattern)"
+        // Keep the short "tom" alias conservative so a capitalized person's name
+        // such as "Tom Hanks" is not interpreted as Tomorrow.
+        let datePattern = "today|(?-i:tod)|tomorrow|(?-i:tom|tmr)|tonight|\(weekdayPattern)"
         let pattern = #"\b("# + datePattern + #")(?:\s+(?:at\s+)?("# + timePattern + #"))?\b"#
-        if let match = firstMatch(pattern, in: text),
+        if let match = firstMatch(pattern, in: text, excluding: excludedRanges),
            let token = capture(1, from: match, in: text),
            let date = resolveDate(token, now: now, calendar: calendar) {
             return result(for: match, in: text, date: applyingTime(capture(2, from: match, in: text), to: date, calendar: calendar))
@@ -77,10 +96,16 @@ enum NaturalDateParser {
         return nil
     }
 
-    private static func parseTimeOnly(_ text: String, now: Date, calendar: Calendar) -> NaturalDateParseResult? {
+    private static func parseTimeOnly(
+        _ text: String,
+        now: Date,
+        calendar: Calendar,
+        excluding excludedRanges: [NSRange]
+    ) -> NaturalDateParseResult? {
         let explicitPattern = #"\bat\s+("# + timePattern + #")\b"#
         let terminalPattern = #"\b("# + timePattern + #")\s*$"#
-        let match = firstMatch(explicitPattern, in: text) ?? firstMatch(terminalPattern, in: text)
+        let match = firstMatch(explicitPattern, in: text, excluding: excludedRanges)
+            ?? firstMatch(terminalPattern, in: text, excluding: excludedRanges)
         guard let match,
               let token = capture(1, from: match, in: text),
               let time = parseTime(token),
@@ -138,7 +163,13 @@ enum NaturalDateParser {
     }
 
     private static func result(for match: NSTextCheckingResult, in text: String, date: Date, hasTime: Bool = false) -> NaturalDateParseResult {
-        NaturalDateParseResult(title: removing(match.range, from: text), date: date, hasTime: hasTime)
+        NaturalDateParseResult(
+            title: removing(match.range, from: text),
+            date: date,
+            hasTime: hasTime,
+            recognizedRange: match.range,
+            recognizedText: (text as NSString).substring(with: match.range)
+        )
     }
 
     private static func result(for match: NSTextCheckingResult, in text: String, date: (date: Date, hasTime: Bool)) -> NaturalDateParseResult {
@@ -164,9 +195,17 @@ enum NaturalDateParser {
         return (hour, minute)
     }
 
-    private static func firstMatch(_ pattern: String, in text: String) -> NSTextCheckingResult? {
+    private static func firstMatch(
+        _ pattern: String,
+        in text: String,
+        excluding excludedRanges: [NSRange]
+    ) -> NSTextCheckingResult? {
         let expression = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
-        return expression?.firstMatch(in: text, range: NSRange(text.startIndex..., in: text))
+        return expression?.matches(in: text, range: NSRange(text.startIndex..., in: text)).first { match in
+            !excludedRanges.contains {
+                NSIntersectionRange($0, match.range).length > 0
+            }
+        }
     }
 
     private static func capture(_ index: Int, from match: NSTextCheckingResult, in text: String) -> String? {
