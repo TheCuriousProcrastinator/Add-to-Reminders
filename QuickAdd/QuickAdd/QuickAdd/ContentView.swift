@@ -19,7 +19,7 @@ private struct SlashSuggestion: Identifiable {
     let title: String
 }
 
-private struct RejectedDateOccurrence: Equatable {
+private struct RejectedRecognitionOccurrence: Equatable {
     var range: NSRange
     let text: String
 }
@@ -42,7 +42,8 @@ struct ContentView: View {
     @State private var listBeforeSmartSelection = ""
     @State private var applyingSmartListSelection = false
     @State private var recognizedDateResult: NaturalDateParseResult?
-    @State private var rejectedDateOccurrences: [RejectedDateOccurrence] = []
+    @State private var recognizedRecurrenceResult: NaturalRecurrenceParseResult?
+    @State private var rejectedRecognitionOccurrences: [RejectedRecognitionOccurrence] = []
     @State private var focusRequestID = 0
     @State private var lists: [EKCalendar] = []
     @State private var errorMessage: String?
@@ -82,7 +83,8 @@ struct ContentView: View {
 
                         HighlightingTextField(
                             text: $title,
-                            recognizedRange: recognizedDateResult?.recognizedRange,
+                            recognizedRange: recognizedRecurrenceResult?.recognizedRange
+                                ?? recognizedDateResult?.recognizedRange,
                             focusRequestID: focusRequestID,
                             onSubmit: {
                                 if !acceptSuggestion() {
@@ -97,7 +99,7 @@ struct ContentView: View {
                                 }
                             },
                             onMoveSuggestion: moveSuggestionSelection,
-                            onRejectRecognition: rejectNaturalDate
+                            onRejectRecognition: rejectNaturalMetadata
                         )
                         .frame(height: 24)
                     }
@@ -141,6 +143,10 @@ struct ContentView: View {
                         if hasDueDate {
                             timeControl
                         }
+
+                        if recognizedRecurrenceResult != nil {
+                            recurrenceControl
+                        }
                     }
                     .padding(.horizontal, 15)
                     .padding(.bottom, 11)
@@ -180,10 +186,10 @@ struct ContentView: View {
             updateInlineListForManualSelection(listID)
         }
         .onChange(of: title) { previousTitle, title in
-            updateRejectedDateOccurrences(from: previousTitle, to: title)
+            updateRejectedRecognitionOccurrences(from: previousTitle, to: title)
             applySmartList(from: title)
             updateSlashSuggestions()
-            applyNaturalDate(from: title)
+            applyNaturalMetadata(from: title)
         }
         .onChange(of: hasDueDate) { _, hasDueDate in
             if !hasDueDate {
@@ -245,8 +251,10 @@ struct ContentView: View {
     }
 
     private func submitTitle() {
-        let titleWithoutDate = recognizedDateResult?.title ?? title
-        let trimmedTitle = SlashListParser.removingMatchedList(from: titleWithoutDate, lists: lists)
+        let titleWithoutMetadata = recognizedRecurrenceResult?.title
+            ?? recognizedDateResult?.title
+            ?? title
+        let trimmedTitle = SlashListParser.removingMatchedList(from: titleWithoutMetadata, lists: lists)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty, !isSaving else { return }
         guard let list = lists.first(where: { $0.calendarIdentifier == selectedListID }) else {
@@ -261,6 +269,9 @@ struct ContentView: View {
         reminder.title = trimmedTitle
         reminder.calendar = list
         reminder.dueDateComponents = dueDateComponents
+        if let recurrence = recognizedRecurrenceResult?.recurrence {
+            reminder.addRecurrenceRule(eventKitRule(for: recurrence))
+        }
 
         do {
             try eventStore.save(reminder, commit: true)
@@ -377,6 +388,19 @@ struct ContentView: View {
         }
     }
 
+    private var recurrenceControl: some View {
+        Label(recurrenceLabel, systemImage: "repeat")
+            .lineLimit(1)
+            .chipStyle()
+    }
+
+    private var recurrenceLabel: String {
+        guard let label = recognizedRecurrenceResult?.recurrence.label, let first = label.first else {
+            return "Repeating"
+        }
+        return first.uppercased() + label.dropFirst()
+    }
+
     private var manualDateBinding: Binding<Date> {
         Binding(
             get: { dueDate },
@@ -397,25 +421,36 @@ struct ContentView: View {
         )
     }
 
-    private func applyNaturalDate(from title: String) {
-        guard let result = acceptedNaturalDate(in: title) else {
+    private func applyNaturalMetadata(from title: String) {
+        if let recurrenceResult = acceptedNaturalRecurrence(in: title) {
+            recognizedRecurrenceResult = recurrenceResult
+            recognizedDateResult = nil
+            applyParsedDate(recurrenceResult.date, hasTime: recurrenceResult.hasTime)
+            return
+        }
+
+        recognizedRecurrenceResult = nil
+        guard let dateResult = acceptedNaturalDate(in: title) else {
             recognizedDateResult = nil
             clearProvisionalDate()
             return
         }
 
-        recognizedDateResult = result
+        recognizedDateResult = dateResult
+        applyParsedDate(dateResult.date, hasTime: dateResult.hasTime)
+    }
 
+    private func applyParsedDate(_ parsedDate: Date, hasTime: Bool) {
         let calendar = Calendar.current
         if !manualDateOverride {
-            let timeSource = manualTimeOverride ? dueDate : result.date
-            dueDate = combining(dateFrom: result.date, timeFrom: timeSource, calendar: calendar)
+            let timeSource = manualTimeOverride ? dueDate : parsedDate
+            dueDate = combining(dateFrom: parsedDate, timeFrom: timeSource, calendar: calendar)
             hasDueDate = true
         }
 
         if !manualTimeOverride {
-            if result.hasTime {
-                dueDate = combining(dateFrom: dueDate, timeFrom: result.date, calendar: calendar)
+            if hasTime {
+                dueDate = combining(dateFrom: dueDate, timeFrom: parsedDate, calendar: calendar)
                 hasDueTime = true
             } else {
                 hasDueTime = false
@@ -423,28 +458,36 @@ struct ContentView: View {
         }
     }
 
+    private func acceptedNaturalRecurrence(in title: String) -> NaturalRecurrenceParseResult? {
+        NaturalRecurrenceParser.parse(title, excluding: excludedRecognitionRanges(in: title))
+    }
+
     private func acceptedNaturalDate(in title: String) -> NaturalDateParseResult? {
-        var excludedRanges = rejectedDateOccurrences.map(\.range)
+        NaturalDateParser.parse(title, excluding: excludedRecognitionRanges(in: title))
+    }
+
+    private func excludedRecognitionRanges(in title: String) -> [NSRange] {
+        var excludedRanges = rejectedRecognitionOccurrences.map(\.range)
         if let fragment = SlashListParser.fragment(in: title) {
             excludedRanges.append(NSRange(fragment.range, in: title))
         }
-        return NaturalDateParser.parse(title, excluding: excludedRanges)
+        return excludedRanges
     }
 
-    private func rejectNaturalDate() {
-        guard let recognizedDateResult else { return }
-        let rejection = RejectedDateOccurrence(
-            range: recognizedDateResult.recognizedRange,
-            text: recognizedDateResult.recognizedText
-        )
-        if !rejectedDateOccurrences.contains(rejection) {
-            rejectedDateOccurrences.append(rejection)
+    private func rejectNaturalMetadata() {
+        let range = recognizedRecurrenceResult?.recognizedRange ?? recognizedDateResult?.recognizedRange
+        let text = recognizedRecurrenceResult?.recognizedText ?? recognizedDateResult?.recognizedText
+        guard let range, let text else { return }
+
+        let rejection = RejectedRecognitionOccurrence(range: range, text: text)
+        if !rejectedRecognitionOccurrences.contains(rejection) {
+            rejectedRecognitionOccurrences.append(rejection)
         }
-        applyNaturalDate(from: title)
+        applyNaturalMetadata(from: title)
     }
 
-    private func updateRejectedDateOccurrences(from oldTitle: String, to newTitle: String) {
-        guard oldTitle != newTitle, !rejectedDateOccurrences.isEmpty else { return }
+    private func updateRejectedRecognitionOccurrences(from oldTitle: String, to newTitle: String) {
+        guard oldTitle != newTitle, !rejectedRecognitionOccurrences.isEmpty else { return }
 
         let oldText = oldTitle as NSString
         let newText = newTitle as NSString
@@ -470,7 +513,7 @@ struct ContentView: View {
         let replacementLength = newText.length - commonPrefixLength - commonSuffixLength
         let locationDelta = replacementLength - editedOldRange.length
 
-        rejectedDateOccurrences = rejectedDateOccurrences.compactMap { occurrence in
+        rejectedRecognitionOccurrences = rejectedRecognitionOccurrences.compactMap { occurrence in
             var updated = occurrence
             let occurrenceEnd = NSMaxRange(occurrence.range)
 
@@ -500,6 +543,41 @@ struct ContentView: View {
         if !manualTimeOverride {
             hasDueTime = false
         }
+    }
+
+    private func eventKitRule(for recurrence: NaturalRecurrence) -> EKRecurrenceRule {
+        let frequency: EKRecurrenceFrequency
+        switch recurrence.frequency {
+        case .daily: frequency = .daily
+        case .weekly: frequency = .weekly
+        case .monthly: frequency = .monthly
+        case .yearly: frequency = .yearly
+        }
+
+        let weekdays = recurrence.weekdays.map { weekday in
+            let eventKitWeekday = EKWeekday(rawValue: weekday.day)!
+            return EKRecurrenceDayOfWeek(eventKitWeekday, weekNumber: weekday.weekNumber ?? 0)
+        }
+
+        if weekdays.isEmpty {
+            return EKRecurrenceRule(
+                recurrenceWith: frequency,
+                interval: recurrence.interval,
+                end: nil
+            )
+        }
+
+        return EKRecurrenceRule(
+            recurrenceWith: frequency,
+            interval: recurrence.interval,
+            daysOfTheWeek: weekdays,
+            daysOfTheMonth: nil,
+            monthsOfTheYear: nil,
+            weeksOfTheYear: nil,
+            daysOfTheYear: nil,
+            setPositions: nil,
+            end: nil
+        )
     }
 
     private func updateSlashSuggestions() {

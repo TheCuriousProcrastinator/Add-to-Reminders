@@ -17,7 +17,7 @@ enum NaturalDateParser {
     ]
 
     private static let weekdayPattern = "sunday|sun|monday|mon|tuesday|tue|tues|wednesday|wed|thursday|thu|thur|thurs|friday|fri|saturday|sat"
-    private static let timePattern = #"(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d|(?:[01]\d|2[0-3])[0-5]\d)"#
+    private static let timePattern = #"(?:noon|\d{1,2}(?::\d{2})?\s*(?:am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d|(?:[01]\d|2[0-3])[0-5]\d)"#
 
     static func parse(
         _ text: String,
@@ -178,6 +178,9 @@ enum NaturalDateParser {
 
     private static func parseTime(_ token: String) -> (hour: Int, minute: Int)? {
         let value = token.trimmingCharacters(in: .whitespaces).lowercased()
+        if value == "noon" {
+            return (12, 0)
+        }
         if value.hasSuffix("am") || value.hasSuffix("pm") {
             let suffix = String(value.suffix(2))
             let components = value.dropLast(2).trimmingCharacters(in: .whitespaces).split(separator: ":")
