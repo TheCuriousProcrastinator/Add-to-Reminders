@@ -25,22 +25,56 @@ cd "$HELPER"
 
 echo "Building native helper..."
 
+rm -f \
+  bin/RichLink-arm64.o \
+  bin/RichLink-x86_64.o \
+  bin/add-to-reminders-host-arm64 \
+  bin/add-to-reminders-host-x86_64 \
+  bin/add-to-reminders-host
+
 xcrun clang \
+  -target arm64-apple-macos14.0 \
   -fobjc-arc \
   -c RichLink.m \
-  -o bin/RichLink.o
+  -o bin/RichLink-arm64.o
 
 xcrun swiftc \
+  -target arm64-apple-macos14.0 \
   main.swift \
-  bin/RichLink.o \
+  bin/RichLink-arm64.o \
   -import-objc-header RichLinkBridge.h \
-  -o bin/add-to-reminders-host \
+  -o bin/add-to-reminders-host-arm64 \
   -framework EventKit \
   -framework Foundation \
   -Xlinker -sectcreate \
   -Xlinker __TEXT \
   -Xlinker __info_plist \
   -Xlinker "$HELPER/Info.plist"
+
+xcrun clang \
+  -target x86_64-apple-macos14.0 \
+  -fobjc-arc \
+  -c RichLink.m \
+  -o bin/RichLink-x86_64.o
+
+xcrun swiftc \
+  -target x86_64-apple-macos14.0 \
+  main.swift \
+  bin/RichLink-x86_64.o \
+  -import-objc-header RichLinkBridge.h \
+  -o bin/add-to-reminders-host-x86_64 \
+  -framework EventKit \
+  -framework Foundation \
+  -Xlinker -sectcreate \
+  -Xlinker __TEXT \
+  -Xlinker __info_plist \
+  -Xlinker "$HELPER/Info.plist"
+
+xcrun lipo \
+  -create \
+  bin/add-to-reminders-host-arm64 \
+  bin/add-to-reminders-host-x86_64 \
+  -output bin/add-to-reminders-host
 
 codesign \
   --force \
@@ -76,7 +110,8 @@ for key in \
   CFBundlePackageType \
   CFBundleVersion \
   CFBundleShortVersionString \
-  LSUIElement
+  LSUIElement \
+  LSMinimumSystemVersion
 do
   /usr/libexec/PlistBuddy \
     -c "Delete :$key" \
@@ -114,6 +149,11 @@ done
 
 /usr/libexec/PlistBuddy \
   -c "Add :LSUIElement bool true" \
+  "$PLIST"
+
+
+/usr/libexec/PlistBuddy \
+  -c "Add :LSMinimumSystemVersion string 14.0" \
   "$PLIST"
 
 codesign \
