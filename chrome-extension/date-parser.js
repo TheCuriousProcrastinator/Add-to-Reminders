@@ -554,6 +554,337 @@ function resolveOrdinalWeekdayOfMonth(
   return null;
 }
 
+const TODOIST_DATE_LANGUAGE_V014 = true;
+
+const DAYPARTS = {
+  morning: {
+    hour: 9,
+    minute: 0
+  },
+  afternoon: {
+    hour: 12,
+    minute: 0
+  },
+  evening: {
+    hour: 19,
+    minute: 0
+  },
+  night: {
+    hour: 22,
+    minute: 0
+  }
+};
+
+function rollForwardTime(
+  now,
+  hour,
+  minute
+) {
+  let candidate =
+    setClock(
+      startOfDay(now),
+      hour,
+      minute
+    );
+
+  if (!candidate) {
+    return null;
+  }
+
+  if (candidate < now) {
+    candidate =
+      addDays(
+        candidate,
+        1
+      );
+  }
+
+  return candidate;
+}
+
+function exactMonthDay(
+  year,
+  month,
+  day
+) {
+  const candidate =
+    new Date(
+      year,
+      month,
+      day
+    );
+
+  if (
+    candidate.getFullYear() !== year ||
+    candidate.getMonth() !== month ||
+    candidate.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return startOfDay(candidate);
+}
+
+function resolveMonthDay(
+  now,
+  month,
+  day,
+  year = null
+) {
+  if (Number.isInteger(year)) {
+    return exactMonthDay(
+      year,
+      month,
+      day
+    );
+  }
+
+  const today =
+    startOfDay(now);
+
+  const currentYear =
+    today.getFullYear();
+
+  for (
+    let candidateYear = currentYear;
+    candidateYear <= currentYear + 20;
+    candidateYear++
+  ) {
+    const candidate =
+      exactMonthDay(
+        candidateYear,
+        month,
+        day
+      );
+
+    if (
+      candidate &&
+      candidate >= today
+    ) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function namedDateComponents(
+  token
+) {
+  const value =
+    token.trim();
+
+  let regex =
+    new RegExp(
+      String.raw`^(${MONTH_PATTERN})\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?$`,
+      "i"
+    );
+
+  let match =
+    value.match(regex);
+
+  if (match) {
+    return {
+      month:
+        MONTHS[
+          match[1].toLowerCase()
+        ],
+
+      day:
+        Number(match[2]),
+
+      year:
+        match[3]
+          ? Number(match[3])
+          : null
+    };
+  }
+
+  regex =
+    new RegExp(
+      String.raw`^(\d{1,2})(?:st|nd|rd|th)?\s+(${MONTH_PATTERN})(?:\s*,?\s*(\d{4}))?$`,
+      "i"
+    );
+
+  match =
+    value.match(regex);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    month:
+      MONTHS[
+        match[2].toLowerCase()
+      ],
+
+    day:
+      Number(match[1]),
+
+    year:
+      match[3]
+        ? Number(match[3])
+        : null
+  };
+}
+
+function offsetCalendarDate(
+  date,
+  amount,
+  unit
+) {
+  const direction =
+    Number(amount);
+
+  if (
+    !Number.isInteger(direction)
+  ) {
+    return null;
+  }
+
+  if (
+    unit.startsWith("day")
+  ) {
+    return addDays(
+      date,
+      direction
+    );
+  }
+
+  if (
+    unit.startsWith("week")
+  ) {
+    return addDays(
+      date,
+      direction * 7
+    );
+  }
+
+  if (
+    unit.startsWith("month")
+  ) {
+    return addMonthsClamped(
+      date,
+      direction
+    );
+  }
+
+  return null;
+}
+
+function resolveOffsetNamedDate(
+  now,
+  components,
+  amount,
+  unit,
+  direction
+) {
+  const signedAmount =
+    direction === "before"
+      ? -amount
+      : amount;
+
+  if (
+    Number.isInteger(
+      components.year
+    )
+  ) {
+    const base =
+      exactMonthDay(
+        components.year,
+        components.month,
+        components.day
+      );
+
+    if (!base) {
+      return null;
+    }
+
+    return offsetCalendarDate(
+      base,
+      signedAmount,
+      unit
+    );
+  }
+
+  const today =
+    startOfDay(now);
+
+  const currentYear =
+    today.getFullYear();
+
+  for (
+    let year = currentYear;
+    year <= currentYear + 20;
+    year++
+  ) {
+    const base =
+      exactMonthDay(
+        year,
+        components.month,
+        components.day
+      );
+
+    if (!base) {
+      continue;
+    }
+
+    const candidate =
+      offsetCalendarDate(
+        base,
+        signedAmount,
+        unit
+      );
+
+    if (
+      candidate &&
+      candidate >= today
+    ) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function clearDateResultFor(
+  text,
+  match
+) {
+  return {
+    original: text,
+
+    title: (
+      text.slice(
+        0,
+        match.index
+      ) +
+      text.slice(
+        match.index +
+        match[0].length
+      )
+    )
+      .replace(/\s+/g, " ")
+      .trim(),
+
+    matchedText:
+      match[0],
+
+    matchedStart:
+      match.index,
+
+    matchedEnd:
+      match.index +
+      match[0].length,
+
+    due: null,
+    time: null,
+    recurrence: null,
+    clearDate: true
+  };
+}
+
 function parseSmartDateSingle(
   text,
   now = new Date()
@@ -1216,6 +1547,422 @@ function parseSmartDateSingle(
   // ONE-TIME SMART DATES
   // ---------------------------------
 
+  // Explicitly remove a default due date.
+
+  {
+    const regex =
+      /\b(?:no\s+due\s+date|no\s+date)\b/i;
+
+    const match =
+      text.match(regex);
+
+    if (match) {
+      return clearDateResultFor(
+        text,
+        match
+      );
+    }
+  }
+
+  // Tomorrow + daypart:
+  // tom morning
+  // tomorrow afternoon
+  // tomorrow evening
+  // tomorrow night
+
+  {
+    const regex =
+      /\b(tomorrow|tom|tmr)\s+(morning|afternoon|evening|night)\b/i;
+
+    const match =
+      text.match(regex);
+
+    if (match) {
+      const rawDateToken =
+        match[1];
+
+      const loweredDateToken =
+        rawDateToken.toLowerCase();
+
+      const shortAlias =
+        loweredDateToken === "tom" ||
+        loweredDateToken === "tmr";
+
+      if (
+        !shortAlias ||
+        rawDateToken ===
+          rawDateToken.toLowerCase()
+      ) {
+        const part =
+          DAYPARTS[
+            match[2].toLowerCase()
+          ];
+
+        const tomorrow =
+          addDays(
+            startOfDay(now),
+            1
+          );
+
+        const date =
+          setClock(
+            tomorrow,
+            part.hour,
+            part.minute
+          );
+
+        return resultFor(
+          text,
+          match,
+          date,
+          true
+        );
+      }
+    }
+  }
+
+  // in the morning / afternoon / evening / night
+
+  {
+    const regex =
+      /\bin\s+the\s+(morning|afternoon|evening|night)\b/i;
+
+    const match =
+      text.match(regex);
+
+    if (match) {
+      const part =
+        DAYPARTS[
+          match[1].toLowerCase()
+        ];
+
+      const date =
+        rollForwardTime(
+          now,
+          part.hour,
+          part.minute
+        );
+
+      return resultFor(
+        text,
+        match,
+        date,
+        true
+      );
+    }
+  }
+
+  // next year -> January 1 next year
+
+  {
+    const regex = new RegExp(
+      String.raw`\bnext\s+year(?:\s+(?:at\s+)?(${TIME}))?\b`,
+      "i"
+    );
+
+    const match =
+      text.match(regex);
+
+    if (match) {
+      const base =
+        new Date(
+          now.getFullYear() + 1,
+          0,
+          1
+        );
+
+      const timed =
+        recurrenceDateWithTime(
+          base,
+          match[1]
+        );
+
+      return resultFor(
+        text,
+        match,
+        timed.date,
+        timed.includeTime
+      );
+    }
+  }
+
+  // end of month
+
+  {
+    const regex = new RegExp(
+      String.raw`\bend\s+of\s+(?:the\s+)?month(?:\s+(?:at\s+)?(${TIME}))?\b`,
+      "i"
+    );
+
+    const match =
+      text.match(regex);
+
+    if (match) {
+      const base =
+        new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0
+        );
+
+      const timed =
+        recurrenceDateWithTime(
+          startOfDay(base),
+          match[1]
+        );
+
+      return resultFor(
+        text,
+        match,
+        timed.date,
+        timed.includeTime
+      );
+    }
+  }
+
+  // mid January / mid Jan
+
+  {
+    const regex = new RegExp(
+      String.raw`\bmid\s+(${MONTH_PATTERN})(?:\s*,?\s*(\d{4}))?(?:\s+(?:at\s+)?(${TIME}))?\b`,
+      "i"
+    );
+
+    const match =
+      text.match(regex);
+
+    if (match) {
+      const month =
+        MONTHS[
+          match[1].toLowerCase()
+        ];
+
+      const year =
+        match[2]
+          ? Number(match[2])
+          : null;
+
+      const base =
+        resolveMonthDay(
+          now,
+          month,
+          15,
+          year
+        );
+
+      if (base) {
+        const timed =
+          recurrenceDateWithTime(
+            base,
+            match[3]
+          );
+
+        return resultFor(
+          text,
+          match,
+          timed.date,
+          timed.includeTime
+        );
+      }
+    }
+  }
+
+  // +5 days / +3 weeks / +2 months
+
+  {
+    const regex = new RegExp(
+      String.raw`(?:^|\s)\+(\d+)\s+(days?|weeks?|months?)(?:\s+(?:at\s+)?(${TIME}))?\b`,
+      "i"
+    );
+
+    const match =
+      text.match(regex);
+
+    if (match) {
+      const amount =
+        Number(match[1]);
+
+      const unit =
+        match[2].toLowerCase();
+
+      if (
+        Number.isInteger(amount) &&
+        amount > 0
+      ) {
+        const base =
+          offsetCalendarDate(
+            startOfDay(now),
+            amount,
+            unit
+          );
+
+        const timed =
+          recurrenceDateWithTime(
+            base,
+            match[3]
+          );
+
+        return resultFor(
+          text,
+          match,
+          timed.date,
+          timed.includeTime
+        );
+      }
+    }
+  }
+
+  // 6 weeks before 21 Jul
+  // 28 days after 21 July
+  // 2 months after September 3
+
+  {
+    const basePattern =
+      String.raw`(?:(?:${MONTH_PATTERN})\s+\d{1,2}(?:st|nd|rd|th)?(?:\s*,?\s*\d{4})?|\d{1,2}(?:st|nd|rd|th)?\s+(?:${MONTH_PATTERN})(?:\s*,?\s*\d{4})?)`;
+
+    const regex = new RegExp(
+      String.raw`\b(\d+)\s+(days?|weeks?|months?)\s+(before|after)\s+(${basePattern})(?:\s+(?:at\s+)?(${TIME}))?\b`,
+      "i"
+    );
+
+    const match =
+      text.match(regex);
+
+    if (match) {
+      const amount =
+        Number(match[1]);
+
+      const unit =
+        match[2].toLowerCase();
+
+      const direction =
+        match[3].toLowerCase();
+
+      const components =
+        namedDateComponents(
+          match[4]
+        );
+
+      if (
+        components &&
+        Number.isInteger(amount) &&
+        amount > 0
+      ) {
+        const base =
+          resolveOffsetNamedDate(
+            now,
+            components,
+            amount,
+            unit,
+            direction
+          );
+
+        if (base) {
+          const timed =
+            recurrenceDateWithTime(
+              base,
+              match[5]
+            );
+
+          return resultFor(
+            text,
+            match,
+            timed.date,
+            timed.includeTime
+          );
+        }
+      }
+    }
+  }
+
+  // Named calendar dates:
+  // Jan 27
+  // January 27, 2027
+  // 27 Jan
+  // 27 January 2027
+
+  {
+    const namedPattern =
+      String.raw`(?:(?:${MONTH_PATTERN})\s+\d{1,2}(?:st|nd|rd|th)?(?:\s*,?\s*\d{4})?|\d{1,2}(?:st|nd|rd|th)?\s+(?:${MONTH_PATTERN})(?:\s*,?\s*\d{4})?)`;
+
+    const regex = new RegExp(
+      String.raw`\b(${namedPattern})(?:\s+(?:at\s+)?(${TIME}))?\b`,
+      "i"
+    );
+
+    const match =
+      text.match(regex);
+
+    if (match) {
+      const components =
+        namedDateComponents(
+          match[1]
+        );
+
+      if (components) {
+        const base =
+          resolveMonthDay(
+            now,
+            components.month,
+            components.day,
+            components.year
+          );
+
+        if (base) {
+          const timed =
+            recurrenceDateWithTime(
+              base,
+              match[2]
+            );
+
+          return resultFor(
+            text,
+            match,
+            timed.date,
+            timed.includeTime
+          );
+        }
+      }
+    }
+  }
+
+  // One-time ordinal day:
+  // 1st / 2nd / 27th / 31st
+  //
+  // Recurrence parsing runs earlier, so
+  // "every 27th" remains recurrence.
+
+  {
+    const regex =
+      /\b(\d{1,2})(?:st|nd|rd|th)\b/i;
+
+    const match =
+      text.match(regex);
+
+    if (match) {
+      const day =
+        Number(match[1]);
+
+      if (
+        day >= 1 &&
+        day <= 31
+      ) {
+        const base =
+          nextDayOfMonth(
+            now,
+            day
+          );
+
+        return resultFor(
+          text,
+          match,
+          base,
+          false
+        );
+      }
+    }
+  }
+
   // QuickAdd parity:
   // 3rd Friday of September
   // the last Monday in November
@@ -1696,7 +2443,7 @@ function parseSmartDateSingle(
 
       if (parsed) {
         const date =
-          setClock(
+          rollForwardTime(
             now,
             parsed.hour,
             parsed.minute
@@ -1767,12 +2514,20 @@ function isSmartTimeOnlyResult(result) {
 }
 
 function strongSmartDateExists(text) {
-  const regex = new RegExp(
-    String.raw`\b(?:today|tomorrow|tonight|next\s+(?:weekend|week|month|${WEEKDAY_PATTERN})|(?:this\s+)?weekend|${WEEKDAY_PATTERN}|in\s+(?:a|\d+)\s+(?:minutes?|mins?|hours?|hrs?|days?|weeks?|months?))\b`,
+  const standard = new RegExp(
+    String.raw`\b(?:today|tomorrow|tonight|next\s+(?:weekend|week|month|year|${WEEKDAY_PATTERN})|(?:this\s+)?weekend|${WEEKDAY_PATTERN}|in\s+(?:a|\d+)\s+(?:minutes?|mins?|hours?|hrs?|days?|weeks?|months?))\b`,
     "i"
   );
 
-  return regex.test(text);
+  const expanded = new RegExp(
+    String.raw`\b(?:no\s+(?:due\s+)?date|end\s+of\s+(?:the\s+)?month|mid\s+(?:${MONTH_PATTERN})|in\s+the\s+(?:morning|afternoon|evening|night)|(?:${MONTH_PATTERN})\s+\d{1,2}|\d{1,2}(?:st|nd|rd|th)?\s+(?:${MONTH_PATTERN}))\b`,
+    "i"
+  );
+
+  return (
+    standard.test(text) ||
+    expanded.test(text)
+  );
 }
 
 function shortAliasInsideResult(result, text) {
@@ -1929,7 +2684,7 @@ function independentSmartTime(
     }
 
     const date =
-      setClock(
+      rollForwardTime(
         now,
         parsed.hour,
         parsed.minute
@@ -2016,7 +2771,10 @@ export function parseSmartDate(
 
   let timeResult = null;
 
-  if (!dateResult?.time) {
+  if (
+    !dateResult?.time &&
+    !dateResult?.clearDate
+  ) {
     timeResult =
       independentSmartTime(
         text,
@@ -2063,15 +2821,28 @@ export function parseSmartDate(
   const firstToken =
     tokens[0] || null;
 
+  const clearDate =
+    Boolean(
+      dateResult?.clearDate
+    );
+
   const due =
-    dateResult?.due ||
-    timeResult?.due ||
-    null;
+    clearDate
+      ? null
+      : (
+          dateResult?.due ||
+          timeResult?.due ||
+          null
+        );
 
   const time =
-    dateResult?.time ||
-    timeResult?.time ||
-    null;
+    clearDate
+      ? null
+      : (
+          dateResult?.time ||
+          timeResult?.time ||
+          null
+        );
 
   return {
     original: text,
@@ -2097,6 +2868,8 @@ export function parseSmartDate(
     recurrence:
       dateResult?.recurrence ||
       null,
+
+    clearDate,
 
     tokens
   };

@@ -1322,6 +1322,53 @@
     }
   </style>
 
+
+  <style id="settings-ui-v011">
+    .header {
+      position: relative;
+    }
+
+    #settingsButton {
+      width: 28px;
+      height: 28px;
+      margin-left: auto;
+      padding: 5px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      transition:
+        color 120ms ease,
+        background 120ms ease;
+    }
+
+    #settingsButton:hover {
+      color: var(--text);
+      background: var(--row-hover);
+    }
+
+    #settingsButton:focus-visible {
+      outline: 1px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    #settingsButton svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+
 </head>
 
 <body>
@@ -1330,6 +1377,21 @@
     <div class="header">
       <img src="icons/icon128.png" alt="">
       <h1>Add to Reminders</h1>
+
+      <button
+        id="settingsButton"
+        type="button"
+        title="Settings"
+        aria-label="Settings"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.11.37.32.7.6 1 .28.28.63.49 1 .6h.1v4H21c-.37.11-.72.32-1 .4-.28.3-.49.63-.6 1Z"></path>
+        </svg>
+      </button>
     </div>
 
     <div class="reminder-card">

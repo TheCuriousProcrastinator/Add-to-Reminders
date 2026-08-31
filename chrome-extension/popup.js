@@ -18,6 +18,19 @@ let lastSmartDateText = "";
 
 const HOST_NAME = "com.alex.addtoreminders";
 
+const CAPTURE_SETTINGS_V011 = true;
+
+const DEFAULT_CAPTURE_SETTINGS = {
+  captureDefaultList: "last",
+  captureDefaultDate: "none",
+  captureDefaultPriority: "0",
+  smartDateRecognition: true
+};
+
+let captureSettings = {
+  ...DEFAULT_CAPTURE_SETTINGS
+};
+
 const form = document.getElementById("form");
 const titleInput = document.getElementById("title");
 const titleMirror = document.getElementById("titleMirror");
@@ -92,6 +105,9 @@ let dueBeforeSmartDate = null;
 let customDateBeforeSmartDate = "";
 let timeBeforeSmartDate = "";
 let smartResolvedDate = null;
+
+let smartPriorityActive = false;
+let priorityBeforeSmartPriority = "0";
 
 let availableLists = [];
 
@@ -271,7 +287,83 @@ function syncRejectedSmartDateRanges(text) {
   lastSmartDateText = text;
 }
 
+function emptySmartDateResult(text) {
+  return {
+    original: text,
+    title: text.trim(),
+    matchedText: null,
+    matchedStart: null,
+    matchedEnd: null,
+    due: null,
+    time: null,
+    recurrence: null,
+    tokens: []
+  };
+}
+
+async function loadCaptureSettings() {
+  const stored =
+    await chrome.storage.local.get(
+      DEFAULT_CAPTURE_SETTINGS
+    );
+
+  captureSettings = {
+    ...DEFAULT_CAPTURE_SETTINGS,
+    ...stored
+  };
+
+  if (
+    !["none", "today", "tomorrow"].includes(
+      captureSettings.captureDefaultDate
+    )
+  ) {
+    captureSettings.captureDefaultDate =
+      "none";
+  }
+
+  if (
+    !["0", "1", "5", "9"].includes(
+      String(
+        captureSettings.captureDefaultPriority
+      )
+    )
+  ) {
+    captureSettings.captureDefaultPriority =
+      "0";
+  }
+
+  captureSettings.captureDefaultPriority =
+    String(
+      captureSettings.captureDefaultPriority
+    );
+
+  captureSettings.smartDateRecognition =
+    captureSettings.smartDateRecognition !== false;
+}
+
+function applyCaptureDefaults() {
+  dueSelect.value =
+    captureSettings.captureDefaultDate;
+
+  prioritySelect.value =
+    captureSettings.captureDefaultPriority;
+
+  priorityBeforeSmartPriority =
+    prioritySelect.value;
+
+  customDateInput.value = "";
+  timeInput.value = "";
+
+  refreshDateTimeControls();
+}
+
 function parseCurrentSmartDate(text) {
+  if (
+    !captureSettings.smartDateRecognition
+  ) {
+    return emptySmartDateResult(text);
+  }
+
   syncRejectedSmartDateRanges(text);
 
   return parseSmartDate(
@@ -742,7 +834,21 @@ function applySmartPriority() {
     );
 
   if (!parsed) {
+    if (smartPriorityActive) {
+      prioritySelect.value =
+        priorityBeforeSmartPriority;
+
+      smartPriorityActive = false;
+    }
+
     return;
+  }
+
+  if (!smartPriorityActive) {
+    priorityBeforeSmartPriority =
+      prioritySelect.value;
+
+    smartPriorityActive = true;
   }
 
   prioritySelect.value =
@@ -1139,6 +1245,15 @@ async function loadLists() {
         "lastListId"
       );
 
+    const fixedDefault =
+      captureSettings.captureDefaultList !==
+        "last" &&
+      availableLists.some(
+        list =>
+          list.id ===
+          captureSettings.captureDefaultList
+      );
+
     const remembered =
       availableLists.some(
         list =>
@@ -1146,7 +1261,11 @@ async function loadLists() {
           stored.lastListId
       );
 
-    if (remembered) {
+    if (fixedDefault) {
+      listSelect.value =
+        captureSettings.captureDefaultList;
+
+    } else if (remembered) {
       listSelect.value =
         stored.lastListId;
 
@@ -1161,6 +1280,9 @@ async function loadLists() {
       if (remindersList) {
         listSelect.value =
           remindersList.id;
+      } else if (availableLists.length) {
+        listSelect.value =
+          availableLists[0].id;
       }
     }
 
@@ -1303,6 +1425,39 @@ function applySmartDate() {
 
   renderTitleHighlight();
   refreshRepeatRow(parsed);
+
+  if (
+    parsed.clearDate &&
+    parsed.matchedText
+  ) {
+    if (!smartDateActive) {
+      dueBeforeSmartDate =
+        dueSelect.value;
+
+      customDateBeforeSmartDate =
+        customDateInput.value;
+
+      timeBeforeSmartDate =
+        timeInput.value;
+
+      smartDateActive = true;
+    }
+
+    clearSmartDateOption();
+
+    dueSelect.value =
+      "none";
+
+    customDateInput.value =
+      "";
+
+    timeInput.value =
+      "";
+
+    refreshDateTimeControls();
+
+    return;
+  }
 
   if (
     !parsed.matchedText ||
@@ -1631,6 +1786,15 @@ listSelect.addEventListener(
   }
 );
 
+prioritySelect.addEventListener(
+  "change",
+  () => {
+    smartPriorityActive = false;
+    priorityBeforeSmartPriority =
+      prioritySelect.value;
+  }
+);
+
 form.addEventListener(
   "submit",
   async event => {
@@ -1776,6 +1940,19 @@ checkHelperButton.addEventListener(
   }
 );
 
+const settingsButton =
+  document.getElementById(
+    "settingsButton"
+  );
+
+settingsButton.addEventListener(
+  "click",
+  async () => {
+    await chrome.runtime.openOptionsPage();
+    window.close();
+  }
+);
+
 const QUICKADD_KEYBOARD_PARITY_V010 = true;
 
 notesInput.addEventListener(
@@ -1817,6 +1994,9 @@ async function init() {
     showMacOnly();
     return;
   }
+
+  await loadCaptureSettings();
+  applyCaptureDefaults();
 
   await loadCurrentPage();
   await loadLists();
