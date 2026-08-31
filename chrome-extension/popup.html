@@ -570,13 +570,765 @@
       display: none !important;
     }
   </style>
+
+  <style id="visual-refresh">
+    :root {
+      --bg: #f5f5f7;
+      --card: transparent;
+      --text: #1c1c1e;
+      --secondary: #8e8e93;
+      --separator: rgba(60, 60, 67, 0.12);
+      --control-bg: rgba(255, 255, 255, 0.72);
+      --control-border: rgba(60, 60, 67, 0.16);
+      --row-hover: rgba(0, 0, 0, 0.025);
+      --accent: #007aff;
+      --accent-hover: #0a84ff;
+      --focus: rgba(0, 122, 255, 0.20);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1b1b1d;
+        --card: transparent;
+        --text: #f5f5f7;
+        --secondary: #929297;
+        --separator: rgba(255, 255, 255, 0.10);
+        --control-bg: rgba(255, 255, 255, 0.035);
+        --control-border: rgba(255, 255, 255, 0.13);
+        --row-hover: rgba(255, 255, 255, 0.035);
+        --accent: #0a84ff;
+        --accent-hover: #409cff;
+        --focus: rgba(10, 132, 255, 0.24);
+      }
+    }
+
+    body {
+      width: 420px;
+      padding: 18px 20px 20px;
+      background: var(--bg);
+      font-size: 14px;
+    }
+
+    form {
+      margin: 0;
+    }
+
+    .header {
+      gap: 11px;
+      padding: 0 4px 20px;
+    }
+
+    .header img {
+      width: 30px;
+      height: 30px;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.35px;
+    }
+
+    .reminder-card {
+      overflow: visible;
+      background: transparent;
+      border-radius: 0;
+    }
+
+    .title-area {
+      padding: 0 0 18px;
+    }
+
+    #titleShell {
+      height: 56px;
+      border: 1px solid var(--control-border);
+      border-radius: 11px;
+      background: var(--control-bg);
+      transition:
+        border-color 120ms ease,
+        box-shadow 120ms ease,
+        background 120ms ease;
+    }
+
+    #titleShell:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--focus);
+    }
+
+    #titleMirror,
+    #title {
+      height: 54px;
+      padding: 0 14px;
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 54px;
+      letter-spacing: -0.25px;
+    }
+
+    #title::selection {
+      background: var(--focus);
+    }
+
+    #url {
+      margin-top: 10px;
+      padding: 0 4px;
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    #projectSuggestions {
+      margin-top: 9px;
+      border-color: var(--control-border);
+      border-radius: 10px;
+      background: var(--bg);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+    }
+
+    .project-suggestion {
+      min-height: 40px;
+      border-color: var(--separator);
+      font-size: 13px;
+    }
+
+    .separator {
+      height: 1px;
+      margin-left: 37px;
+      background: var(--separator);
+    }
+
+    .meta-row {
+      min-height: 58px;
+      grid-template-columns: 32px 72px minmax(0, 1fr);
+      padding: 0 4px;
+      border-radius: 9px;
+    }
+
+    .meta-row:hover {
+      background: var(--row-hover);
+    }
+
+    .row-icon {
+      justify-content: flex-start;
+      color: var(--secondary);
+    }
+
+    .list-dot {
+      position: relative;
+      width: 20px;
+      height: 20px;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .list-dot::before {
+      content: "☷";
+      position: absolute;
+      inset: 0;
+      color: var(--secondary);
+      font-size: 20px;
+      font-weight: 400;
+      line-height: 20px;
+    }
+
+    .calendar-icon {
+      width: 18px;
+      height: 17px;
+      border-width: 1.5px;
+      border-color: var(--secondary);
+      border-radius: 5px;
+    }
+
+    .calendar-icon::before {
+      top: 5px;
+      background: var(--secondary);
+    }
+
+    .calendar-icon::after {
+      left: 4px;
+      top: -3px;
+      box-shadow: 7px 0 0 var(--secondary);
+    }
+
+    .clock-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .flag-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .flag-icon::before {
+      height: 16px;
+    }
+
+    .flag-icon::after {
+      width: 10px;
+      height: 8px;
+    }
+
+    .row-label,
+    #timeWrap label {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.1px;
+    }
+
+    .select-wrap::after {
+      right: 5px;
+      width: 8px;
+      height: 8px;
+      border: 0;
+      border-top: 1.7px solid var(--secondary);
+      border-right: 1.7px solid var(--secondary);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    select {
+      height: 58px;
+      padding-right: 30px;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    select:focus {
+      color: var(--secondary);
+    }
+
+    #customDateRow {
+      padding: 7px 4px 12px 104px;
+      border-top: 0;
+    }
+
+    #customDate {
+      height: 38px;
+      border-color: var(--control-border);
+      border-radius: 9px;
+      background: var(--control-bg);
+    }
+
+    #timeWrap,
+    #repeatWrap {
+      min-height: 58px;
+      grid-template-columns: 32px 72px minmax(0, 1fr);
+      padding: 0 4px;
+      border-radius: 9px;
+    }
+
+    #timeWrap:hover,
+    #repeatWrap:hover {
+      background: var(--row-hover);
+    }
+
+    #time {
+      height: 58px;
+      font-size: 14px;
+    }
+
+    .repeat-icon {
+      font-size: 21px;
+    }
+
+    .repeat-value {
+      padding-right: 5px;
+      font-size: 14px;
+    }
+
+    #notesRow {
+      display: block;
+      padding: 16px 0 0;
+    }
+
+    #notesRow .row-icon {
+      display: none;
+    }
+
+    #notes {
+      width: 100%;
+      min-height: 78px;
+      max-height: 140px;
+      padding: 13px 14px;
+      border: 1px solid var(--control-border);
+      border-radius: 11px;
+      background: var(--control-bg);
+      font-size: 14px;
+      line-height: 20px;
+      transition:
+        border-color 120ms ease,
+        box-shadow 120ms ease;
+    }
+
+    #notes:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--focus);
+    }
+
+    #status {
+      min-height: 0;
+      margin: 10px 4px 0;
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    #status:empty {
+      display: none;
+    }
+
+    #helperRequired {
+      margin-top: 0;
+      padding: 17px;
+      border: 1px solid var(--control-border);
+      border-radius: 12px;
+      background: var(--control-bg);
+    }
+
+    .helper-title {
+      font-size: 16px;
+    }
+
+    .helper-copy {
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    .helper-actions button {
+      min-height: 38px;
+      border-radius: 9px;
+    }
+
+    #add {
+      height: 52px;
+      margin-top: 18px;
+      border-radius: 12px;
+      background:
+        linear-gradient(
+          180deg,
+          #168cff 0%,
+          #0878ed 100%
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        0 1px 2px rgba(0, 0, 0, 0.14);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.15px;
+    }
+
+    #add:hover:not(:disabled) {
+      background:
+        linear-gradient(
+          180deg,
+          #319bff 0%,
+          #1485f6 100%
+        );
+    }
+
+    #add:active:not(:disabled) {
+      transform: scale(0.992);
+    }
+  </style>
+
+
+  <style id="visual-polish-2">
+    .list-dot {
+      position: relative;
+      width: 19px;
+      height: 16px;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .list-dot::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 2px;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--secondary);
+      box-shadow:
+        0 5px 0 var(--secondary),
+        0 10px 0 var(--secondary);
+    }
+
+    .list-dot::after {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 2.5px;
+      width: 11px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--secondary);
+      box-shadow:
+        0 5px 0 var(--secondary),
+        0 10px 0 var(--secondary);
+    }
+
+    .flag-icon {
+      position: relative;
+      width: 19px;
+      height: 19px;
+      overflow: visible;
+    }
+
+    .flag-icon::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 1px;
+      width: 1.5px;
+      height: 17px;
+      border-radius: 2px;
+      background: var(--secondary);
+    }
+
+    .flag-icon::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 2px;
+      width: 11px;
+      height: 8px;
+      border: 1.5px solid var(--secondary);
+      border-left: 0;
+      border-radius: 0 3px 3px 0;
+      background: transparent;
+    }
+  </style>
+
+
+  <style id="compact-refresh-v016">
+    body {
+      width: 360px;
+      padding: 16px;
+      font-size: 13.5px;
+    }
+
+    .header {
+      gap: 10px;
+      padding: 0 2px 16px;
+    }
+
+    .header img {
+      width: 26px;
+      height: 26px;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      letter-spacing: -0.3px;
+    }
+
+    .title-area {
+      padding: 0 0 14px;
+    }
+
+    #titleShell {
+      height: 48px;
+      border-radius: 10px;
+    }
+
+    #titleShell:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.18);
+    }
+
+    #titleMirror,
+    #title {
+      height: 46px;
+      padding: 0 12px;
+      font-size: 17px;
+      line-height: 46px;
+      letter-spacing: -0.2px;
+    }
+
+    #url {
+      margin-top: 8px;
+      padding: 0 3px;
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    #projectSuggestions {
+      margin-top: 7px;
+      border-radius: 9px;
+    }
+
+    .project-suggestion {
+      min-height: 36px;
+      font-size: 12.5px;
+    }
+
+    .separator {
+      margin-left: 34px;
+    }
+
+    .meta-row {
+      min-height: 50px;
+      grid-template-columns: 30px 66px minmax(0, 1fr);
+      padding: 0 3px;
+      border-radius: 8px;
+    }
+
+    .row-label,
+    #timeWrap label {
+      font-size: 13.5px;
+    }
+
+    select {
+      height: 50px;
+      padding-right: 27px;
+      font-size: 13.5px;
+    }
+
+    .select-wrap::after {
+      right: 4px;
+      width: 7px;
+      height: 7px;
+    }
+
+    .list-dot {
+      width: 18px;
+      height: 15px;
+    }
+
+    .list-dot::after {
+      width: 10px;
+    }
+
+    .calendar-icon {
+      width: 17px;
+      height: 16px;
+    }
+
+    .flag-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    #customDateRow {
+      padding: 6px 3px 10px 96px;
+    }
+
+    #customDate {
+      height: 34px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    #timeWrap,
+    #repeatWrap {
+      min-height: 50px;
+      grid-template-columns: 30px 66px minmax(0, 1fr);
+      padding: 0 3px;
+      border-radius: 8px;
+    }
+
+    #time {
+      height: 50px;
+      font-size: 13.5px;
+    }
+
+    .repeat-icon {
+      font-size: 19px;
+    }
+
+    .repeat-value {
+      padding-right: 4px;
+      font-size: 13.5px;
+    }
+
+    #notesRow {
+      padding: 13px 0 0;
+    }
+
+    #notes {
+      min-height: 64px;
+      max-height: 120px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      line-height: 19px;
+    }
+
+    #notes:focus {
+      box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.18);
+    }
+
+    #status {
+      margin: 8px 3px 0;
+      font-size: 11.5px;
+      line-height: 15px;
+    }
+
+    #helperRequired {
+      padding: 14px;
+      border-radius: 10px;
+    }
+
+    .helper-title {
+      font-size: 15px;
+    }
+
+    .helper-copy {
+      font-size: 12px;
+      line-height: 17px;
+    }
+
+    .helper-actions button {
+      min-height: 35px;
+      border-radius: 8px;
+    }
+
+    #add {
+      height: 46px;
+      margin-top: 15px;
+      border-radius: 11px;
+      font-size: 15px;
+      letter-spacing: -0.1px;
+    }
+  </style>
+
+
+  <style id="final-polish-v017">
+    body {
+      width: 360px;
+      padding: 14px 16px 16px;
+    }
+
+    .header {
+      gap: 9px;
+      padding: 0 2px 14px;
+    }
+
+    .header img {
+      width: 25px;
+      height: 25px;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      line-height: 25px;
+    }
+
+    .title-area {
+      padding-bottom: 12px;
+    }
+
+    #titleShell {
+      height: 44px;
+      border-radius: 9px;
+    }
+
+    #titleShell:focus-within {
+      border-color: rgba(10, 132, 255, 0.82);
+      box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.10);
+    }
+
+    #titleMirror,
+    #title {
+      height: 42px;
+      padding: 0 11px;
+      font-size: 16px;
+      line-height: 42px;
+      letter-spacing: -0.15px;
+    }
+
+    #title::selection {
+      background: rgba(10, 132, 255, 0.18);
+    }
+
+    #url {
+      margin-top: 7px;
+      padding: 0 3px;
+      font-size: 12px;
+      line-height: 15px;
+    }
+
+    .separator {
+      margin-left: 34px;
+    }
+
+    .meta-row {
+      min-height: 44px;
+      grid-template-columns: 30px 66px minmax(0, 1fr);
+    }
+
+    .row-label,
+    #timeWrap label {
+      font-size: 13px;
+    }
+
+    select {
+      height: 44px;
+      font-size: 13px;
+    }
+
+    #timeWrap,
+    #repeatWrap {
+      min-height: 44px;
+      grid-template-columns: 30px 66px minmax(0, 1fr);
+    }
+
+    #time {
+      height: 44px;
+      font-size: 13px;
+    }
+
+    .repeat-value {
+      font-size: 13px;
+    }
+
+    #customDateRow {
+      padding-top: 5px;
+      padding-bottom: 8px;
+    }
+
+    #customDate {
+      height: 32px;
+      font-size: 12.5px;
+    }
+
+    #notesRow {
+      padding-top: 11px;
+    }
+
+    #notes {
+      min-height: 58px;
+      max-height: 112px;
+      padding: 10px 11px;
+      border-radius: 9px;
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    #notes:focus {
+      border-color: rgba(10, 132, 255, 0.72);
+      box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.08);
+    }
+
+    #status {
+      margin-top: 7px;
+    }
+
+    #add {
+      height: 42px;
+      margin-top: 13px;
+      border-radius: 10px;
+      font-size: 14.5px;
+    }
+  </style>
+
 </head>
 
 <body>
   <form id="form">
 
     <div class="header">
-      <img src="icons/icon32.png" alt="">
+      <img src="icons/icon128.png" alt="">
       <h1>Add to Reminders</h1>
     </div>
 

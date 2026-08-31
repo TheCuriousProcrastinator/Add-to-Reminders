@@ -958,10 +958,15 @@ async function loadCurrentPage() {
     currentUrl.startsWith("http://") ||
     currentUrl.startsWith("https://");
 
-  titleInput.value =
+  const initialTitle =
     pending?.title ||
     tab?.title ||
     "";
+
+  titleInput.value =
+    initialTitle
+      ? initialTitle.replace(/\s+$/, "") + " "
+      : "";
 
   try {
     const url =
@@ -991,7 +996,19 @@ async function loadCurrentPage() {
   }
 
   titleInput.focus();
-  titleInput.select();
+
+  const initialCaret =
+    titleInput.value.length;
+
+  titleInput.setSelectionRange(
+    initialCaret,
+    initialCaret
+  );
+
+  requestAnimationFrame(() => {
+    titleMirror.scrollLeft =
+      titleInput.scrollLeft;
+  });
 
   updateAddButton();
 }
@@ -1756,6 +1773,39 @@ checkHelperButton.addEventListener(
       checkHelperButton.textContent =
         "Check Again";
     }
+  }
+);
+
+const QUICKADD_KEYBOARD_PARITY_V010 = true;
+
+notesInput.addEventListener(
+  "keydown",
+  event => {
+    if (
+      event.key === "Enter" &&
+      event.metaKey
+    ) {
+      event.preventDefault();
+
+      if (!addButton.disabled) {
+        form.requestSubmit();
+      }
+    }
+  }
+);
+
+document.addEventListener(
+  "keydown",
+  event => {
+    if (
+      event.key !== "Escape" ||
+      event.defaultPrevented
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    window.close();
   }
 );
 

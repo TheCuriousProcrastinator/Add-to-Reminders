@@ -235,6 +235,59 @@ const WEEKDAY_PATTERN =
 const TIME =
   String.raw`(?:noon|\d{1,2}(?::\d{2})?\s*(?:am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d|(?:[01]\d|2[0-3])[0-5]\d)`;
 
+// QUICKADD_PARITY_V018
+
+const ONE_TIME_ORDINALS = {
+  "1st": 1,
+  first: 1,
+  "2nd": 2,
+  second: 2,
+  "3rd": 3,
+  third: 3,
+  "4th": 4,
+  fourth: 4,
+  "5th": 5,
+  fifth: 5,
+  last: -1
+};
+
+const ONE_TIME_ORDINAL_PATTERN =
+  "1st|first|2nd|second|3rd|third|" +
+  "4th|fourth|5th|fifth|last";
+
+const MONTHS = {
+  january: 0,
+  jan: 0,
+  february: 1,
+  feb: 1,
+  march: 2,
+  mar: 2,
+  april: 3,
+  apr: 3,
+  may: 4,
+  june: 5,
+  jun: 5,
+  july: 6,
+  jul: 6,
+  august: 7,
+  aug: 7,
+  september: 8,
+  sept: 8,
+  sep: 8,
+  october: 9,
+  oct: 9,
+  november: 10,
+  nov: 10,
+  december: 11,
+  dec: 11
+};
+
+const MONTH_PATTERN =
+  "january|jan|february|feb|march|mar|" +
+  "april|apr|may|june|jun|july|jul|" +
+  "august|aug|september|sept|sep|" +
+  "october|oct|november|nov|december|dec";
+
 function recurrence(
   frequency,
   interval,
@@ -364,6 +417,143 @@ function nthWeekdayDate(date, weekday, weekNumber) {
   return base;
 }
 
+function addMonthsClamped(date, amount) {
+  const source = new Date(date);
+  const originalDay = source.getDate();
+
+  const targetMonth = new Date(
+    source.getFullYear(),
+    source.getMonth() + amount,
+    1,
+    source.getHours(),
+    source.getMinutes(),
+    source.getSeconds(),
+    source.getMilliseconds()
+  );
+
+  const lastDay = new Date(
+    targetMonth.getFullYear(),
+    targetMonth.getMonth() + 1,
+    0
+  ).getDate();
+
+  targetMonth.setDate(
+    Math.min(originalDay, lastDay)
+  );
+
+  return targetMonth;
+}
+
+function ordinalWeekdayDateInMonth(
+  year,
+  month,
+  weekday,
+  weekNumber
+) {
+  const monthStart = new Date(
+    year,
+    month,
+    1
+  );
+
+  let candidate;
+
+  if (weekNumber === -1) {
+    const lastDay = new Date(
+      year,
+      month + 1,
+      0
+    );
+
+    const offset =
+      (
+        lastDay.getDay() -
+        weekday +
+        7
+      ) % 7;
+
+    candidate = new Date(
+      year,
+      month,
+      lastDay.getDate() - offset
+    );
+  } else {
+    const firstWeekday =
+      monthStart.getDay();
+
+    const day =
+      1 +
+      (
+        weekday -
+        firstWeekday +
+        7
+      ) % 7 +
+      (
+        weekNumber - 1
+      ) * 7;
+
+    candidate = new Date(
+      year,
+      month,
+      day
+    );
+  }
+
+  if (
+    candidate.getFullYear() !== year ||
+    candidate.getMonth() !== month
+  ) {
+    return null;
+  }
+
+  return startOfDay(candidate);
+}
+
+function resolveOrdinalWeekdayOfMonth(
+  now,
+  weekday,
+  weekNumber,
+  month,
+  year = null
+) {
+  const today = startOfDay(now);
+
+  if (Number.isInteger(year)) {
+    return ordinalWeekdayDateInMonth(
+      year,
+      month,
+      weekday,
+      weekNumber
+    );
+  }
+
+  const currentYear =
+    today.getFullYear();
+
+  for (
+    let candidateYear = currentYear;
+    candidateYear <= currentYear + 20;
+    candidateYear++
+  ) {
+    const candidate =
+      ordinalWeekdayDateInMonth(
+        candidateYear,
+        month,
+        weekday,
+        weekNumber
+      );
+
+    if (
+      candidate &&
+      candidate >= today
+    ) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
 function parseSmartDateSingle(
   text,
   now = new Date()
@@ -430,9 +620,11 @@ function parseSmartDateSingle(
               base.getDate() + (amount * 7)
             );
           } else {
-            base.setMonth(
-              base.getMonth() + amount
-            );
+            base =
+              addMonthsClamped(
+                base,
+                amount
+              );
           }
         }
 
@@ -1023,6 +1215,107 @@ function parseSmartDateSingle(
   // ---------------------------------
   // ONE-TIME SMART DATES
   // ---------------------------------
+
+  // QuickAdd parity:
+  // 3rd Friday of September
+  // the last Monday in November
+  // on the 2nd Tuesday of Sep 2027 at 4pm
+
+  {
+    const regex = new RegExp(
+      String.raw`\b(?:(?:on\s+)?the\s+|on\s+)?(${ONE_TIME_ORDINAL_PATTERN})\s+(${WEEKDAY_PATTERN})\s+(?:of|in)\s+(${MONTH_PATTERN})(?:\s*,?\s*(\d{4}))?(?:\s+(?:at\s+)?(${TIME}))?\b`,
+      "i"
+    );
+
+    const match = text.match(regex);
+
+    if (match) {
+      const weekNumber =
+        ONE_TIME_ORDINALS[
+          match[1].toLowerCase()
+        ];
+
+      const weekday =
+        WEEKDAYS[
+          match[2].toLowerCase()
+        ];
+
+      const month =
+        MONTHS[
+          match[3].toLowerCase()
+        ];
+
+      const year =
+        match[4]
+          ? Number(match[4])
+          : null;
+
+      const base =
+        resolveOrdinalWeekdayOfMonth(
+          now,
+          weekday,
+          weekNumber,
+          month,
+          year
+        );
+
+      if (base) {
+        const timed =
+          recurrenceDateWithTime(
+            base,
+            match[5]
+          );
+
+        return resultFor(
+          text,
+          match,
+          timed.date,
+          timed.includeTime
+        );
+      }
+    }
+  }
+
+  // QuickAdd parity:
+  // tonight
+  // tonight at 8pm
+  // next month
+  // next month at noon
+
+  {
+    const regex = new RegExp(
+      String.raw`\b(tonight|next\s+month)(?:\s+(?:at\s+)?(${TIME}))?\b`,
+      "i"
+    );
+
+    const match = text.match(regex);
+
+    if (match) {
+      const token =
+        match[1].toLowerCase();
+
+      const base =
+        token === "tonight"
+          ? startOfDay(now)
+          : addMonthsClamped(
+              startOfDay(now),
+              1
+            );
+
+      const timed =
+        recurrenceDateWithTime(
+          base,
+          match[2]
+        );
+
+      return resultFor(
+        text,
+        match,
+        timed.date,
+        timed.includeTime
+      );
+    }
+  }
 
   // in 30 minutes / in 2 hours
   {
