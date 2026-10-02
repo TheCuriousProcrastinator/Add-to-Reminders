@@ -866,3 +866,138 @@ After the underlying executable change has already passed required local validat
 A version/build bump, packaging step, signing step, generated appcast/feed change, or final Release-configuration build does **not** by itself require another manual user approval if the executable behavior being released already passed local validation.
 
 Stop only for a genuine blocker, a failed validation that requires an executable behavior change, or an authorization/credential action that only the user can perform. If release preparation introduces a new executable or build-affecting behavior change beyond what was already validated, the local validation gate reopens before publication.
+
+---
+
+<!-- validated-doitthen-native-resolver-2026-10-02 -->
+
+## Validated Do It Then Native Messaging resolver - 2026-10-02
+
+This exact Chrome extension change was tested locally against the real Do It Then development build before commit.
+
+### Version
+
+Extension development version:
+
+`0.1.15`
+
+Previous version:
+
+`0.1.14`
+
+### Native Messaging resolver
+
+New file:
+
+`chrome-extension/native-bridge.js`
+
+Preferred host:
+
+`com.thecuriousprocrastinator.doitthen.chrome`
+
+Existing standalone fallback host:
+
+`com.alex.addtoreminders`
+
+Behavior:
+
+1. The extension probes the Do It Then host with `ping`.
+2. If that host is genuinely unavailable, the extension falls back to the existing standalone Add to Reminders helper.
+3. The selected host is cached for the lifetime of the popup/options page.
+4. If the Do It Then host launches and returns a real permission, validation, or save error, the extension does not silently fall back.
+5. If an already-selected preferred host later becomes unavailable, the current request may retry through the standalone host.
+
+Popup and Settings now share this resolver.
+
+### Files
+
+Validated executable/source changes:
+
+- `chrome-extension/manifest.json`
+- `chrome-extension/popup.js`
+- `chrome-extension/options.html`
+- `chrome-extension/options.js`
+- `chrome-extension/native-bridge.js`
+- `chrome-extension/test-native-bridge.mjs`
+
+`options.html` now loads `options.js` as a module so it can import the shared resolver.
+
+### Automated validation PASS
+
+Validated locally:
+
+- extension version is `0.1.15`
+- JavaScript syntax checks passed
+- existing date parser regression suite passed
+- new Native Messaging resolver regression suite passed
+- preferred Do It Then host selection passed
+- unavailable preferred-host fallback passed
+- permission/error response does not trigger fallback
+- a running host that exits is not misclassified as an unavailable installation
+
+### Real Chrome validation PASS
+
+The unpacked development extension was loaded from:
+
+`/Users/alex/Documents/Vibe Coding/AddToReminders-doitthen-dev/chrome-extension`
+
+Development extension ID:
+
+`fdkkbdcnkigfhiabomhklbfapojbpdol`
+
+Validated in Chrome:
+
+- extension correctly shows version `0.1.15`
+- Apple Reminders lists load through the Do It Then host
+- reminder creation succeeds
+- Settings Default List loads
+- smart date behavior works
+- `/List` behavior works
+- priority syntax such as `p1` works
+
+The existing Web Store extension remains separate and unchanged.
+
+### Do It Then regression PASS
+
+Validated against the current Do It Then development branch:
+
+`vibe/chrome-theme-bridge`
+
+Do It Then HEAD used for this test:
+
+`27fcede867bcfbe11aa9134fe184e9f57d234871`
+
+Validated:
+
+- app launches normally
+- Calendar loads
+- Reminders load
+- Global Quick Add saves normally
+
+### Development Native Messaging registration
+
+For local validation, the preferred host was registered at the user level for Chrome and Chrome for Testing and pointed directly at the freshly built Do It Then development host.
+
+This registration was a local development setup step only.
+
+No production `/Library` Native Messaging registration was added in this extension commit.
+
+### Important existing fallback behavior
+
+The standalone helper remains supported and must not be removed.
+
+The extension must continue to work for users who do not have Do It Then installed.
+
+### Exact next task
+
+Implement extension theme following through the preferred Do It Then host:
+
+- request `themeInfo`
+- when Do It Then is available, apply its selected appearance/theme palette
+- when Do It Then is unavailable, use normal System appearance
+- do not add an independent extension theme selector
+- preserve standalone helper fallback behavior
+
+Do not begin production installer/registration changes until the extension theme behavior is locally validated.
+
+GitHub remains read-only for each subsequent executable change until that exact change passes local validation.

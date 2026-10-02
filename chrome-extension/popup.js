@@ -1,3 +1,8 @@
+import {
+  sendNativeMessage,
+  isNativeHostUnavailableError
+} from "./native-bridge.js";
+
 import { parseSmartDate } from "./date-parser.js";
 
 import {
@@ -15,8 +20,6 @@ let rejectedSmartDateRanges = [];
 let activeSmartDateTokens = [];
 let lastSmartDateText = "";
 
-
-const HOST_NAME = "com.alex.addtoreminders";
 
 const CAPTURE_SETTINGS_V011 = true;
 
@@ -972,38 +975,6 @@ function refreshRepeatRow(parsed) {
   repeatWrap.hidden = false;
 }
 
-function sendNativeMessage(message) {
-  return new Promise(
-    (resolve, reject) => {
-      chrome.runtime.sendNativeMessage(
-        HOST_NAME,
-        message,
-        response => {
-          if (chrome.runtime.lastError) {
-            reject(
-              new Error(
-                chrome.runtime.lastError.message
-              )
-            );
-            return;
-          }
-
-          if (!response) {
-            reject(
-              new Error(
-                "No response from Mac helper."
-              )
-            );
-            return;
-          }
-
-          resolve(response);
-        }
-      );
-    }
-  );
-}
-
 async function consumePendingCapture() {
   try {
     const stored =
@@ -1120,23 +1091,8 @@ async function loadCurrentPage() {
 }
 
 function isMissingHelperError(error) {
-  const message =
-    String(
-      error?.message ||
-      error ||
-      ""
-    ).toLowerCase();
-
-  return (
-    message.includes(
-      "native messaging host not found"
-    ) ||
-    message.includes(
-      "specified native messaging host not found"
-    ) ||
-    message.includes(
-      "access to the specified native messaging host is forbidden"
-    )
+  return isNativeHostUnavailableError(
+    error
   );
 }
 
