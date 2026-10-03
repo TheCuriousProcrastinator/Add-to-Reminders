@@ -953,5 +953,33 @@ Production Chrome Web Store ID:
 
 `nofdmceaajfglgpldmibhggabdjgbgnf`
 
-Uploading/submitting the ZIP in the Chrome Web Store dashboard is the remaining
-external publication action.
+Chrome Web Store version 0.1.17 was uploaded to the existing production
+listing and the user confirmed the publication step passed.
+
+No additional Do It Then / Add to Reminders integration work is currently
+required.
+
+
+---
+
+<!-- chrome-web-store-0.1.17-published -->
+
+## Chrome Web Store 0.1.17 publication complete - 2026-10-03
+
+The user confirmed the Chrome Web Store publication step passed for extension
+version **0.1.17**.
+
+Production extension ID:
+
+`nofdmceaajfglgpldmibhggabdjgbgnf`
+
+Final integration state:
+
+- Do It Then 1.0.4 build 18 published
+- Sparkle release/update feed verified
+- automatic Do It Then Native Messaging registration released
+- Add to Reminders 0.1.17 source on `main`
+- Chrome Web Store 0.1.17 publication completed
+- standalone Add to Reminders Helper remains supported as fallback
+
+No additional integration work is currently required.
