@@ -1,0 +1,34 @@
+name: Manual clean-environment validation
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate extension JavaScript
+        run: |
+          set -euo pipefail
+          node --check chrome-extension/background.js
+          node --check chrome-extension/popup.js
+          node --check chrome-extension/options.js
+          node --check chrome-extension/date-parser.js
+          node --check chrome-extension/project-parser.js
+          node --check chrome-extension/priority-parser.js
+          node chrome-extension/test-date-parser.mjs
+
+      - name: Validate package script syntax
+        run: bash -n build-pkg.command

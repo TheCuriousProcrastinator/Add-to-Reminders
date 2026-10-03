@@ -568,9 +568,15 @@ A documentation-only handoff commit does not require an extension version bump.
 
 ## Validation
 
-There is currently **no `.github/workflows` directory and no GitHub Actions workflow** in the repo.
+Normal development and release validation is authoritative only when performed locally on the user's Mac.
 
-Validation is therefore local/manual unless a workflow is added later.
+The repository contains `.github/workflows/manual-validation.yml`.
+
+That workflow is intentionally manual-only through `workflow_dispatch` and exists only for optional clean-environment verification when the user explicitly requests it.
+
+GitHub Actions must not run automatically for feature-branch pushes, `main` pushes, pull requests, release/version tags, schedules, or other repository events.
+
+Development and releases do not depend on GitHub Actions.
 
 Current lightweight parser script:
 
@@ -866,3 +872,28 @@ After the underlying executable change has already passed required local validat
 A version/build bump, packaging step, signing step, generated appcast/feed change, or final Release-configuration build does **not** by itself require another manual user approval if the executable behavior being released already passed local validation.
 
 Stop only for a genuine blocker, a failed validation that requires an executable behavior change, or an authorization/credential action that only the user can perform. If release preparation introduces a new executable or build-affecting behavior change beyond what was already validated, the local validation gate reopens before publication.
+
+
+---
+
+## Local Mac + GitHub hosting policy - 2026-10-02
+
+The user's Mac is the authoritative development and release environment.
+
+GitHub is used for committed source/history, branches, tags, GitHub Releases and downloadable assets, and optional manually requested clean-environment verification.
+
+GitHub Actions policy:
+
+- no automatic runs on feature branches
+- no automatic runs on `main`
+- no automatic runs on pull requests
+- no automatic runs on release/version tags
+- no scheduled runs
+- only explicit `workflow_dispatch` runs are allowed
+- GitHub Actions is optional verification and is not part of the normal development or release loop
+
+The native helper package and Chrome Web Store artifacts continue to be built and verified locally. `build-pkg.command` remains the helper packaging path.
+
+GitHub does not back up signing identities, private keys, Keychain credentials, local secrets, ignored files, `dist/`, or uncommitted work.
+
+This policy migration changes only `.github/workflows/manual-validation.yml` and this handoff. It does not change extension source, helper source, manifest version, package output, or runtime behavior.
