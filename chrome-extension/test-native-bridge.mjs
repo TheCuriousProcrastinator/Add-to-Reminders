@@ -212,6 +212,83 @@ function fakeRuntime(steps) {
   );
 }
 
+// Theme info is requested only from the
+// preferred Do It Then host.
+{
+  const runtime =
+    fakeRuntime([
+      {
+        host:
+          PREFERRED_NATIVE_HOST,
+        action:
+          "ping",
+        response:
+          { ok: true }
+      },
+      {
+        host:
+          PREFERRED_NATIVE_HOST,
+        action:
+          "themeInfo",
+        response:
+          {
+            ok: true,
+            available: true,
+            schemaVersion: 1,
+            appearanceMode: "light",
+            lightTheme: "paperEmber",
+            darkTheme: "carbonEmber"
+          }
+      }
+    ]);
+
+  const bridge =
+    createNativeBridge(runtime);
+
+  const response =
+    await bridge
+      .getDoItThenThemeInfo();
+
+  assert.equal(
+    response.available,
+    true
+  );
+}
+
+// When Do It Then is unavailable, theme
+// silently remains System. The standalone
+// helper is not asked for themeInfo.
+{
+  const runtime =
+    fakeRuntime([
+      {
+        host:
+          PREFERRED_NATIVE_HOST,
+        action:
+          "ping",
+        error:
+          "Specified native messaging host not found."
+      }
+    ]);
+
+  const bridge =
+    createNativeBridge(runtime);
+
+  const response =
+    await bridge
+      .getDoItThenThemeInfo();
+
+  assert.equal(
+    response.available,
+    false
+  );
+
+  assert.equal(
+    bridge.getActiveHostName(),
+    FALLBACK_NATIVE_HOST
+  );
+}
+
 console.log(
   "Native bridge resolver tests passed"
 );

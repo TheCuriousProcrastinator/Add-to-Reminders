@@ -2,6 +2,10 @@ import {
   sendNativeMessage
 } from "./native-bridge.js";
 
+import {
+  applyDoItThenTheme
+} from "./extension-theme.js";
+
 const DEFAULTS = {
   captureDefaultList: "last",
   captureDefaultListTitle: "",
@@ -309,6 +313,8 @@ smartToggle.addEventListener(
 );
 
 async function init() {
+  await applyDoItThenTheme();
+
   const stored =
     await chrome.storage.local.get(
       DEFAULTS

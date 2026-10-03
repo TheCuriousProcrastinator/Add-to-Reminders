@@ -1001,3 +1001,170 @@ Implement extension theme following through the preferred Do It Then host:
 Do not begin production installer/registration changes until the extension theme behavior is locally validated.
 
 GitHub remains read-only for each subsequent executable change until that exact change passes local validation.
+
+---
+
+<!-- validated-doitthen-theme-integration-2026-10-02 -->
+
+## Validated Do It Then theme integration - 2026-10-02
+
+This exact Chrome extension change was tested locally against the real Do It Then development build before commit.
+
+### Version
+
+Extension development version:
+
+`0.1.17`
+
+Previous development version:
+
+`0.1.15`
+
+`0.1.16` was an intermediate local theme test and was not committed.
+
+### Theme architecture
+
+New shared module:
+
+`chrome-extension/extension-theme.js`
+
+The extension does not have an independent theme selector.
+
+When the preferred Do It Then Native Messaging host is available, the extension requests:
+
+`{"action":"themeInfo"}`
+
+The response provides:
+
+- `schemaVersion`
+- `appearanceMode`
+- `lightTheme`
+- `darkTheme`
+
+Supported Do It Then themes:
+
+Light:
+- `paperEmber`
+- `polarInk`
+- `mintCandy`
+
+Dark:
+- `carbonEmber`
+- `midnightCircuit`
+- `plumStatic`
+
+For Do It Then Appearance = `system`, the extension resolves the light/dark theme using Chrome's `prefers-color-scheme`.
+
+If Do It Then or valid theme state is unavailable, the extension preserves its existing normal System appearance.
+
+The standalone Add to Reminders helper is never queried for theme data.
+
+### Native bridge behavior
+
+`chrome-extension/native-bridge.js` now exposes dedicated Do It Then theme retrieval.
+
+Theme requests use only:
+
+`com.thecuriousprocrastinator.doitthen.chrome`
+
+If that preferred host is unavailable, theme retrieval returns unavailable and the UI stays on System appearance.
+
+Existing reminder host fallback remains unchanged:
+
+1. prefer Do It Then
+2. fall back to `com.alex.addtoreminders` only when the preferred host is genuinely unavailable
+3. do not mask real permission/save/request errors with fallback
+
+### Popup and Settings
+
+Both popup and extension Settings apply the resolved Do It Then theme.
+
+Mapped UI values include:
+
+- background
+- surfaces
+- text
+- secondary text
+- borders/separators
+- controls
+- hover
+- accent
+- accent hover
+- focus
+- smart-token background
+- text shown on accent-colored controls
+
+### Fixed during manual validation
+
+The Add Reminder CTA still appeared Chrome blue after the first theme implementation.
+
+Cause:
+
+`popup.html` contained a later CSS rule with a hard-coded blue gradient that overrode `--accent`.
+
+Fixed by replacing that gradient with:
+
+- `var(--accent)`
+- `var(--accent-hover)`
+
+The later hard-coded blue Notes focus styling was also changed to use the active theme variables.
+
+Validated examples:
+
+- Paper Ember -> orange CTA/accent
+- Mint Candy -> pink CTA/accent
+- Midnight Circuit -> cyan CTA/accent
+
+### Local validation PASS
+
+Automated validation passed:
+
+- JavaScript syntax checks
+- existing date parser regression suite
+- Native Messaging resolver regression suite
+- extension theme mapping regression suite
+- System/light/dark resolution
+- invalid/unavailable theme falls back to normal System appearance
+
+Manual Chrome validation passed:
+
+- unpacked extension shows version `0.1.17`
+- popup follows Do It Then theme
+- extension Settings follows Do It Then theme
+- Add Reminder button follows selected accent
+- reminder creation still succeeds
+- `/Inbox` behavior works
+- smart date such as `tomorrow` works
+- priority syntax such as `p1` works
+
+Do It Then regression validation also passed against:
+
+Branch:
+`vibe/chrome-theme-bridge`
+
+HEAD:
+`27fcede867bcfbe11aa9134fe184e9f57d234871`
+
+Validated:
+
+- app launches normally
+- Calendar loads
+- Reminders load
+- Global Quick Add saves normally
+
+### Exact next task
+
+Run the real fallback matrix before productionizing installation:
+
+1. Do It Then host + standalone helper -> Do It Then host
+2. Do It Then host only -> Do It Then host
+3. standalone helper only -> standalone helper
+4. neither installed/registered -> existing Helper Required UI
+5. stale preferred-host registration -> standalone fallback
+6. preferred host launches but returns a real permission/error response -> no fallback
+
+After that matrix passes, productionize the Do It Then Native Messaging manifest/registration and release packaging.
+
+Do not remove standalone helper support.
+
+GitHub remains read-only for each subsequent executable change until that exact change passes local validation.

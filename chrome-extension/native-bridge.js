@@ -144,8 +144,52 @@ export function createNativeBridge(runtime) {
     }
   }
 
+  async function getDoItThenThemeInfo() {
+    const hostName =
+      await selectHost();
+
+    if (
+      hostName !==
+      PREFERRED_NATIVE_HOST
+    ) {
+      return {
+        ok: true,
+        available: false,
+        schemaVersion: 1
+      };
+    }
+
+    try {
+      return await sendToHost(
+        hostName,
+        {
+          action: "themeInfo"
+        }
+      );
+
+    } catch (error) {
+      if (
+        isNativeHostUnavailableError(
+          error
+        )
+      ) {
+        activeHostName =
+          FALLBACK_NATIVE_HOST;
+
+        return {
+          ok: true,
+          available: false,
+          schemaVersion: 1
+        };
+      }
+
+      throw error;
+    }
+  }
+
   return {
     sendNativeMessage,
+    getDoItThenThemeInfo,
 
     getActiveHostName() {
       return activeHostName;
@@ -173,4 +217,10 @@ export function sendNativeMessage(
     .sendNativeMessage(
       message
     );
+}
+
+
+export function getDoItThenThemeInfo() {
+  return getDefaultBridge()
+    .getDoItThenThemeInfo();
 }

@@ -16,6 +16,7 @@
       --accent-hover: #0a84ff;
       --focus: rgba(0, 122, 255, 0.22);
       --smart-bg: rgba(0, 122, 255, 0.13);
+      --on-accent: #ffffff;
       --error: #ff3b30;
       --success: #34c759;
     }
@@ -31,6 +32,7 @@
         --accent-hover: #409cff;
         --focus: rgba(10, 132, 255, 0.28);
         --smart-bg: rgba(10, 132, 255, 0.18);
+        --on-accent: #ffffff;
         --error: #ff453a;
         --success: #30d158;
       }
@@ -531,7 +533,7 @@
 
     #downloadHelper {
       background: var(--accent);
-      color: white;
+      color: var(--on-accent);
     }
 
     #checkHelper {
@@ -546,7 +548,7 @@
       border: 0;
       border-radius: 11px;
       background: var(--accent);
-      color: #fff;
+      color: var(--on-accent);
       font: inherit;
       font-size: 14px;
       font-weight: 650;
@@ -904,8 +906,8 @@
       background:
         linear-gradient(
           180deg,
-          #168cff 0%,
-          #0878ed 100%
+          var(--accent) 0%,
+          var(--accent-hover) 100%
         );
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.14),
@@ -919,8 +921,8 @@
       background:
         linear-gradient(
           180deg,
-          #319bff 0%,
-          #1485f6 100%
+          var(--accent-hover) 0%,
+          var(--accent) 100%
         );
     }
 
@@ -1306,8 +1308,8 @@
     }
 
     #notes:focus {
-      border-color: rgba(10, 132, 255, 0.72);
-      box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.08);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--focus);
     }
 
     #status {

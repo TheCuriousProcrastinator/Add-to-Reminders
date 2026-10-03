@@ -3,6 +3,10 @@ import {
   isNativeHostUnavailableError
 } from "./native-bridge.js";
 
+import {
+  applyDoItThenTheme
+} from "./extension-theme.js";
+
 import { parseSmartDate } from "./date-parser.js";
 
 import {
@@ -1943,6 +1947,8 @@ document.addEventListener(
 );
 
 async function init() {
+  await applyDoItThenTheme();
+
   const platform =
     await chrome.runtime.getPlatformInfo();
 
