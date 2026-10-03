@@ -1,5 +1,10 @@
-const HOST_NAME =
-  "com.alex.addtoreminders";
+import {
+  sendNativeMessage
+} from "./native-bridge.js";
+
+import {
+  applyDoItThenTheme
+} from "./extension-theme.js";
 
 const DEFAULTS = {
   captureDefaultList: "last",
@@ -63,34 +68,6 @@ function setStatus(
       1200
     );
   }
-}
-
-function sendNativeMessage(message) {
-  return new Promise(
-    (resolve, reject) => {
-      chrome.runtime.sendNativeMessage(
-        HOST_NAME,
-        message,
-        response => {
-          if (
-            chrome.runtime.lastError
-          ) {
-            reject(
-              new Error(
-                chrome.runtime
-                  .lastError
-                  .message
-              )
-            );
-
-            return;
-          }
-
-          resolve(response);
-        }
-      );
-    }
-  );
 }
 
 function normalizeLists(response) {
@@ -336,6 +313,8 @@ smartToggle.addEventListener(
 );
 
 async function init() {
+  await applyDoItThenTheme();
+
   const stored =
     await chrome.storage.local.get(
       DEFAULTS

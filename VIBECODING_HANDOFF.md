@@ -43,7 +43,7 @@ Because this file is committed after the code HEAD above, always verify the actu
 Verified in `chrome-extension/manifest.json` on `main`:
 
 - Manifest V3
-- source version: **0.1.14**
+- source version: **0.1.17**
 - store/listing name in manifest: `Add Website to Reminders`
 - action title: `Add to Reminders`
 - default popup: `popup.html`
@@ -111,12 +111,24 @@ Current runtime source files in GitHub:
 - `chrome-extension/priority-parser.js`
 - `chrome-extension/options.html`
 - `chrome-extension/options.js`
+- `chrome-extension/native-bridge.js`
+- `chrome-extension/extension-theme.js`
 - `chrome-extension/test-date-parser.mjs`
+- `chrome-extension/test-native-bridge.mjs`
+- `chrome-extension/test-extension-theme.mjs`
 - `chrome-extension/icons/`
 
-The extension uses Chrome Native Messaging host:
+The extension prefers Chrome Native Messaging host:
+
+`com.thecuriousprocrastinator.doitthen.chrome`
+
+and falls back to the standalone helper host:
 
 `com.alex.addtoreminders`
+
+Fallback occurs only when the preferred Do It Then host is genuinely
+unavailable. A real permission, validation, or save error from Do It Then is
+surfaced rather than silently falling back.
 
 ### Native helper
 
@@ -528,6 +540,8 @@ Expected runtime whitelist:
 - `priority-parser.js`
 - `options.html`
 - `options.js`
+- `native-bridge.js`
+- `extension-theme.js`
 - `icons/icon16.png`
 - `icons/icon32.png`
 - `icons/icon48.png`
@@ -897,3 +911,47 @@ The native helper package and Chrome Web Store artifacts continue to be built an
 GitHub does not back up signing identities, private keys, Keychain credentials, local secrets, ignored files, `dist/`, or uncommitted work.
 
 This policy migration changes only `.github/workflows/manual-validation.yml` and this handoff. It does not change extension source, helper source, manifest version, package output, or runtime behavior.
+
+
+---
+
+<!-- chrome-extension-release-0.1.17 -->
+
+## Chrome extension 0.1.17 release source - 2026-10-03
+
+The exact locally validated Chrome extension from:
+
+- branch: `vibe/doitthen-native-bridge`
+- commit: `1937f211e483c05a5cc7a9f677c114bca3cc0aaf`
+
+was promoted unchanged into `main`.
+
+Version:
+
+`0.1.17`
+
+Validated production behavior:
+
+- prefers `com.thecuriousprocrastinator.doitthen.chrome`
+- falls back to `com.alex.addtoreminders` only when Do It Then is unavailable
+- does not mask real Do It Then permission/save/request errors
+- popup follows Do It Then theme
+- Settings follows Do It Then theme
+- falls back to System appearance when Do It Then is unavailable
+- real six-scenario host fallback matrix passed
+- reminder creation passed
+- list/date/priority parsing regressions passed
+
+Web Store artifact:
+
+`dist/AddToReminders-0.1.17-webstore.zip`
+
+The source manifest retains its development `key` for the stable unpacked
+extension ID. The Web Store ZIP removes only that copied `key`.
+
+Production Chrome Web Store ID:
+
+`nofdmceaajfglgpldmibhggabdjgbgnf`
+
+Uploading/submitting the ZIP in the Chrome Web Store dashboard is the remaining
+external publication action.
