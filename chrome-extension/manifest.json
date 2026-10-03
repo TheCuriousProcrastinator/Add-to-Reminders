@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Add Website to Reminders",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "Add the current website to Apple Reminders.",
   "permissions": [
     "activeTab",

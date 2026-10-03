@@ -304,7 +304,8 @@ function emptySmartDateResult(text) {
     due: null,
     time: null,
     recurrence: null,
-    tokens: []
+    tokens: [],
+    highlightTokens: []
   };
 }
 
@@ -400,6 +401,26 @@ function rejectSmartDateToken(token) {
   }
 }
 
+function rejectRecognizedDateTokens(
+  parsed
+) {
+  for (
+    const token of
+    parsed?.tokens || []
+  ) {
+    if (
+      token.kind !== "date" &&
+      token.kind !== "time"
+    ) {
+      continue;
+    }
+
+    rejectSmartDateToken(
+      token
+    );
+  }
+}
+
 function renderTitleHighlight() {
   const text = titleInput.value;
 
@@ -418,8 +439,10 @@ function renderTitleHighlight() {
   const tokens = [];
 
   activeSmartDateTokens =
-    Array.isArray(dateParsed.tokens)
-      ? dateParsed.tokens
+    Array.isArray(
+      dateParsed.highlightTokens
+    )
+      ? dateParsed.highlightTokens
       : [];
 
   for (
@@ -1518,7 +1541,28 @@ function applySmartDate() {
 dueSelect.addEventListener(
   "change",
   () => {
+    const manuallyOverrodeSmartDate =
+      smartDateActive &&
+      dueSelect.value !==
+        "smart";
+
+    if (
+      manuallyOverrodeSmartDate
+    ) {
+      const parsed =
+        parseCurrentSmartDate(
+          titleInput.value
+        );
+
+      rejectRecognizedDateTokens(
+        parsed
+      );
+    }
+
     smartDateActive = false;
+    dueBeforeSmartDate = null;
+    customDateBeforeSmartDate = "";
+    timeBeforeSmartDate = "";
 
     if (
       dueSelect.value !==
@@ -1528,6 +1572,7 @@ dueSelect.addEventListener(
     }
 
     refreshDateTimeControls();
+    renderTitleHighlight();
 
     if (
       dueSelect.value ===

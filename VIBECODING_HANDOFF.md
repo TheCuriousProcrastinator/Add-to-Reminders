@@ -983,3 +983,46 @@ Final integration state:
 - standalone Add to Reminders Helper remains supported as fallback
 
 No additional integration work is currently required.
+
+---
+
+## Chrome natural-date stack parity - validated 2026-10-03
+
+Chrome extension version: **0.1.18**
+
+Built/tested in the user's real local checkout and manually validated in Chrome.
+
+Natural-language date behavior now matches Do It Then Quick Add:
+
+- multiple natural date occurrences can coexist in the title
+- the right-most eligible date is active
+- only the active natural date is highlighted
+- earlier dates remain internal fallbacks
+- clicking/rejecting the active date reveals the previous eligible date
+- manual Date override suppresses currently recognized natural date/time tokens
+- rejected phrases remain literal text
+- editing a rejected phrase invalidates its rejection and allows the new date to become active again
+- if a natural date is highlighted, that exact date is reflected in the actual Date control
+- smart-token cleanup still removes all accepted metadata from the saved reminder title
+
+Validated example:
+
+`start oct 3 then nov 4`
+
+- Nov 4 active/highlighted
+- reject Nov 4 -> Oct 3 becomes active/highlighted
+- manually choose No date -> no natural date highlighted
+- edit Nov 4 -> Nov 5 -> Nov 5 becomes active/highlighted and actual due date
+
+Regression checks passed for parser, Native Messaging bridge, theme handling, and manual Chrome interaction.
+
+Relevant files:
+
+- `chrome-extension/date-parser.js`
+- `chrome-extension/popup.js`
+- `chrome-extension/test-date-parser.mjs`
+- `chrome-extension/manifest.json`
+
+### Exact next development task
+
+No next product change selected.

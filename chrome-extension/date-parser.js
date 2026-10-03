@@ -2747,6 +2747,7 @@ export function parseSmartDate(
     );
 
   let dateResult = primary;
+  let dateResults = [];
 
   if (
     dateResult?.matchedText &&
@@ -2755,17 +2756,97 @@ export function parseSmartDate(
     dateResult = null;
   }
 
+  if (
+    dateResult?.matchedText &&
+    !dateResult.recurrence &&
+    !dateResult.clearDate
+  ) {
+    dateResults.push(
+      dateResult
+    );
+
+    const scanExcludedRanges = [
+      ...excludedRanges,
+      {
+        start: dateResult.matchedStart,
+        end: dateResult.matchedEnd
+      }
+    ];
+
+    for (
+      let attempt = 0;
+      attempt < 24;
+      attempt++
+    ) {
+      const next =
+        preferredSmartDateResult(
+          text,
+          now,
+          scanExcludedRanges
+        );
+
+      if (
+        !next?.matchedText ||
+        next.recurrence ||
+        next.clearDate ||
+        isSmartTimeOnlyResult(next)
+      ) {
+        break;
+      }
+
+      dateResults.push(
+        next
+      );
+
+      scanExcludedRanges.push({
+        start: next.matchedStart,
+        end: next.matchedEnd
+      });
+    }
+
+    dateResults.sort(
+      (a, b) => {
+        if (
+          a.matchedStart !==
+          b.matchedStart
+        ) {
+          return (
+            a.matchedStart -
+            b.matchedStart
+          );
+        }
+
+        return (
+          a.matchedEnd -
+          b.matchedEnd
+        );
+      }
+    );
+
+    dateResult =
+      dateResults[
+        dateResults.length - 1
+      ] || null;
+
+  } else if (
+    dateResult?.matchedText
+  ) {
+    dateResults = [
+      dateResult
+    ];
+  }
+
   const blockedRanges = [
     ...excludedRanges
   ];
 
-  if (
-    dateResult?.matchedStart != null &&
-    dateResult?.matchedEnd != null
+  for (
+    const result of
+    dateResults
   ) {
     blockedRanges.push({
-      start: dateResult.matchedStart,
-      end: dateResult.matchedEnd
+      start: result.matchedStart,
+      end: result.matchedEnd
     });
   }
 
@@ -2785,21 +2866,21 @@ export function parseSmartDate(
 
   const tokens = [];
 
-  if (
-    dateResult?.matchedStart != null &&
-    dateResult?.matchedEnd != null
+  for (
+    const result of
+    dateResults
   ) {
     tokens.push({
       kind:
-        dateResult.recurrence
+        result.recurrence
           ? "recurrence"
           : "date",
-      start: dateResult.matchedStart,
-      end: dateResult.matchedEnd,
+      start: result.matchedStart,
+      end: result.matchedEnd,
       text:
         text.slice(
-          dateResult.matchedStart,
-          dateResult.matchedEnd
+          result.matchedStart,
+          result.matchedEnd
         )
     });
   }
@@ -2818,8 +2899,43 @@ export function parseSmartDate(
       a.start - b.start
   );
 
-  const firstToken =
-    tokens[0] || null;
+  const highlightTokens = [];
+
+  if (
+    dateResult?.matchedStart != null &&
+    dateResult?.matchedEnd != null
+  ) {
+    highlightTokens.push({
+      kind:
+        dateResult.recurrence
+          ? "recurrence"
+          : "date",
+      start: dateResult.matchedStart,
+      end: dateResult.matchedEnd,
+      text:
+        text.slice(
+          dateResult.matchedStart,
+          dateResult.matchedEnd
+        )
+    });
+  }
+
+  if (timeResult) {
+    highlightTokens.push({
+      kind: "time",
+      start: timeResult.start,
+      end: timeResult.end,
+      text: timeResult.text
+    });
+  }
+
+  highlightTokens.sort(
+    (a, b) =>
+      a.start - b.start
+  );
+
+  const firstHighlightedToken =
+    highlightTokens[0] || null;
 
   const clearDate =
     Boolean(
@@ -2854,13 +2970,16 @@ export function parseSmartDate(
       ),
 
     matchedText:
-      firstToken?.text || null,
+      firstHighlightedToken?.text ||
+      null,
 
     matchedStart:
-      firstToken?.start ?? null,
+      firstHighlightedToken?.start ??
+      null,
 
     matchedEnd:
-      firstToken?.end ?? null,
+      firstHighlightedToken?.end ??
+      null,
 
     due,
     time,
@@ -2871,6 +2990,7 @@ export function parseSmartDate(
 
     clearDate,
 
-    tokens
+    tokens,
+    highlightTokens
   };
 }
