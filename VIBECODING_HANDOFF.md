@@ -983,3 +983,63 @@ Final integration state:
 - standalone Add to Reminders Helper remains supported as fallback
 
 No additional integration work is currently required.
+
+---
+
+## Do It Then extension check-in - validated 2026-10-04
+
+Local validation: PASS.
+
+Development branch:
+
+`vibe/doitthen-extension-checkin`
+
+Validated base:
+
+`95621c175ef79a9c14dc89839bdac6db00e6a71e`
+
+Development extension version:
+
+`0.1.18`
+
+### Purpose
+
+The extension reports its presence to Do It Then through the existing Native Messaging connection.
+
+### Architecture
+
+The extension sends a lightweight `ping` containing its extension version.
+
+Do It Then records successful Native Messaging contact as the availability source of truth.
+
+Do not replace this with Chrome profile or extension-folder inspection.
+
+### Development host isolation
+
+Unpacked development extension ID:
+
+`fdkkbdcnkigfhiabomhklbfapojbpdol`
+
+Development host:
+
+`com.thecuriousprocrastinator.doitthen.chrome.dev`
+
+Production host:
+
+`com.thecuriousprocrastinator.doitthen.chrome`
+
+This prevents development Do It Then builds from overwriting production Native Messaging registration.
+
+### Validated behavior
+
+Manual validation passed for:
+
+- unpacked 0.1.18 extension connects to development Do It Then
+- Do It Then recognizes extension check-in
+- reminder creation still works
+- Do It Then theme sync still works
+- production and development Native Messaging hosts remain independent
+
+Automated syntax, Native Messaging bridge, and theme tests passed before manual validation.
+
+No GitHub Actions run is required for this development push.

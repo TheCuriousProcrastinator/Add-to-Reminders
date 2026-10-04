@@ -1,6 +1,21 @@
 export const PREFERRED_NATIVE_HOST =
   "com.thecuriousprocrastinator.doitthen.chrome";
 
+export const DEVELOPMENT_NATIVE_HOST =
+  "com.thecuriousprocrastinator.doitthen.chrome.dev";
+
+export const DEVELOPMENT_EXTENSION_ID =
+  "fdkkbdcnkigfhiabomhklbfapojbpdol";
+
+export function preferredNativeHostForRuntime(
+  runtime
+) {
+  return runtime?.id ===
+    DEVELOPMENT_EXTENSION_ID
+    ? DEVELOPMENT_NATIVE_HOST
+    : PREFERRED_NATIVE_HOST;
+}
+
 export const FALLBACK_NATIVE_HOST =
   "com.alex.addtoreminders";
 
@@ -32,6 +47,11 @@ export function isNativeHostUnavailableError(
 
 export function createNativeBridge(runtime) {
   let activeHostName = null;
+
+  const preferredNativeHost =
+    preferredNativeHostForRuntime(
+      runtime
+    );
 
   function sendToHost(
     hostName,
@@ -79,7 +99,7 @@ export function createNativeBridge(runtime) {
     try {
       const response =
         await sendToHost(
-          PREFERRED_NATIVE_HOST,
+          preferredNativeHost,
           {
             action: "ping"
           }
@@ -93,7 +113,7 @@ export function createNativeBridge(runtime) {
       }
 
       activeHostName =
-        PREFERRED_NATIVE_HOST;
+        preferredNativeHost;
 
     } catch (error) {
       if (
@@ -126,7 +146,7 @@ export function createNativeBridge(runtime) {
     } catch (error) {
       if (
         hostName ===
-          PREFERRED_NATIVE_HOST &&
+          preferredNativeHost &&
         isNativeHostUnavailableError(
           error
         )
@@ -150,7 +170,7 @@ export function createNativeBridge(runtime) {
 
     if (
       hostName !==
-      PREFERRED_NATIVE_HOST
+      preferredNativeHost
     ) {
       return {
         ok: true,

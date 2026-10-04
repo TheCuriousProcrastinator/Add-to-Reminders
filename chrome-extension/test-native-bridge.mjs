@@ -2,14 +2,20 @@ import assert from "node:assert/strict";
 
 import {
   PREFERRED_NATIVE_HOST,
+  DEVELOPMENT_NATIVE_HOST,
+  DEVELOPMENT_EXTENSION_ID,
   FALLBACK_NATIVE_HOST,
   createNativeBridge
 } from "./native-bridge.js";
 
-function fakeRuntime(steps) {
+function fakeRuntime(
+  steps,
+  id = "production-extension"
+) {
   let lastError = null;
 
   return {
+    id,
     get lastError() {
       return lastError;
     },
@@ -90,6 +96,50 @@ function fakeRuntime(steps) {
   assert.equal(
     bridge.getActiveHostName(),
     PREFERRED_NATIVE_HOST
+  );
+}
+
+// Development extension uses an isolated
+// development Do It Then host.
+{
+  const runtime =
+    fakeRuntime(
+      [
+        {
+          host:
+            DEVELOPMENT_NATIVE_HOST,
+          action:
+            "ping",
+          response:
+            { ok: true }
+        },
+        {
+          host:
+            DEVELOPMENT_NATIVE_HOST,
+          action:
+            "lists",
+          response:
+            {
+              ok: true,
+              lists: []
+            }
+        }
+      ],
+      DEVELOPMENT_EXTENSION_ID
+    );
+
+  const bridge =
+    createNativeBridge(runtime);
+
+  const response =
+    await bridge.sendNativeMessage({
+      action: "lists"
+    });
+
+  assert.equal(response.ok, true);
+  assert.equal(
+    bridge.getActiveHostName(),
+    DEVELOPMENT_NATIVE_HOST
   );
 }
 

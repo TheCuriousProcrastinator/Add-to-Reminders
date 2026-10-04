@@ -1,6 +1,50 @@
 const SELECTION_MENU =
   "add-selection-to-reminders";
 
+const DEVELOPMENT_EXTENSION_ID =
+  "fdkkbdcnkigfhiabomhklbfapojbpdol";
+
+const PRODUCTION_NATIVE_HOST =
+  "com.thecuriousprocrastinator.doitthen.chrome";
+
+const DEVELOPMENT_NATIVE_HOST =
+  "com.thecuriousprocrastinator.doitthen.chrome.dev";
+
+const DO_IT_THEN_NATIVE_HOST =
+  chrome.runtime.id ===
+    DEVELOPMENT_EXTENSION_ID
+    ? DEVELOPMENT_NATIVE_HOST
+    : PRODUCTION_NATIVE_HOST;
+
+function checkInWithDoItThen() {
+  chrome.runtime.sendNativeMessage(
+    DO_IT_THEN_NATIVE_HOST,
+    {
+      action: "ping",
+      extensionVersion:
+        chrome.runtime
+          .getManifest()
+          .version
+    },
+    () => {
+      // A missing Do It Then host is expected when the app
+      // is not installed. Reading lastError suppresses Chrome's
+      // unchecked-error console warning.
+      void chrome.runtime.lastError;
+    }
+  );
+}
+
+checkInWithDoItThen();
+
+chrome.runtime.onStartup.addListener(
+  checkInWithDoItThen
+);
+
+chrome.runtime.onInstalled.addListener(
+  checkInWithDoItThen
+);
+
 async function setupMenus() {
   await chrome.contextMenus.removeAll();
 
