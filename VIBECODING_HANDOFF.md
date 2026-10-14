@@ -71,12 +71,14 @@ Because this file is committed after the code HEAD above, always verify the actu
 
 ## Current version and release state
 
+**Current-versus-historical clarification:** Chrome extension source on `main` is **0.1.18**. Earlier sections headed `0.1.17` describe the previously completed 0.1.17 Web Store release; they do not establish that 0.1.18 is published to the Chrome Web Store. The separate native helper's latest verified GitHub Release remains **v0.1.4**. Do not infer store publication from `manifest.json`.
+
 ### Chrome extension
 
 Verified in `chrome-extension/manifest.json` on `main`:
 
 - Manifest V3
-- source version: **0.1.17**
+- source version on current `main`: **0.1.18** (verified against `chrome-extension/manifest.json` on 2026-10-13; Chrome Web Store publication for 0.1.18 is **not verified**)
 - store/listing name in manifest: `Add Website to Reminders`
 - action title: `Add to Reminders`
 - default popup: `popup.html`
@@ -159,8 +161,8 @@ and falls back to the standalone helper host:
 
 `com.alex.addtoreminders`
 
-Fallback occurs only when the preferred Do It Then host is genuinely
-unavailable. A real permission, validation, or save error from Do It Then is
+Fallback occurs only when the preferred Doit Then host is genuinely
+unavailable. A real permission, validation, or save error from Doit Then is
 surfaced rather than silently falling back.
 
 ### Native helper
@@ -966,11 +968,11 @@ Version:
 Validated production behavior:
 
 - prefers `com.thecuriousprocrastinator.doitthen.chrome`
-- falls back to `com.alex.addtoreminders` only when Do It Then is unavailable
-- does not mask real Do It Then permission/save/request errors
-- popup follows Do It Then theme
-- Settings follows Do It Then theme
-- falls back to System appearance when Do It Then is unavailable
+- falls back to `com.alex.addtoreminders` only when Doit Then is unavailable
+- does not mask real Doit Then permission/save/request errors
+- popup follows Doit Then theme
+- Settings follows Doit Then theme
+- falls back to System appearance when Doit Then is unavailable
 - real six-scenario host fallback matrix passed
 - reminder creation passed
 - list/date/priority parsing regressions passed
@@ -989,7 +991,7 @@ Production Chrome Web Store ID:
 Chrome Web Store version 0.1.17 was uploaded to the existing production
 listing and the user confirmed the publication step passed.
 
-No additional Do It Then / Add to Reminders integration work is currently
+No additional Doit Then / Add to Reminders integration work is currently
 required.
 
 
@@ -1008,9 +1010,9 @@ Production extension ID:
 
 Final integration state:
 
-- Do It Then 1.0.4 build 18 published
+- Doit Then 1.0.4 build 18 published
 - Sparkle release/update feed verified
-- automatic Do It Then Native Messaging registration released
+- automatic Doit Then Native Messaging registration released
 - Add to Reminders 0.1.17 source on `main`
 - Chrome Web Store 0.1.17 publication completed
 - standalone Add to Reminders Helper remains supported as fallback
@@ -1019,7 +1021,7 @@ No additional integration work is currently required.
 
 ---
 
-## Do It Then extension check-in - validated 2026-10-04
+## Doit Then extension check-in - validated 2026-10-04
 
 Local validation: PASS.
 
@@ -1037,13 +1039,13 @@ Development extension version:
 
 ### Purpose
 
-The extension reports its presence to Do It Then through the existing Native Messaging connection.
+The extension reports its presence to Doit Then through the existing Native Messaging connection.
 
 ### Architecture
 
 The extension sends a lightweight `ping` containing its extension version.
 
-Do It Then records successful Native Messaging contact as the availability source of truth.
+Doit Then records successful Native Messaging contact as the availability source of truth.
 
 Do not replace this with Chrome profile or extension-folder inspection.
 
@@ -1061,16 +1063,16 @@ Production host:
 
 `com.thecuriousprocrastinator.doitthen.chrome`
 
-This prevents development Do It Then builds from overwriting production Native Messaging registration.
+This prevents development Doit Then builds from overwriting production Native Messaging registration.
 
 ### Validated behavior
 
 Manual validation passed for:
 
-- unpacked 0.1.18 extension connects to development Do It Then
-- Do It Then recognizes extension check-in
+- unpacked 0.1.18 extension connects to development Doit Then
+- Doit Then recognizes extension check-in
 - reminder creation still works
-- Do It Then theme sync still works
+- Doit Then theme sync still works
 - production and development Native Messaging hosts remain independent
 
 Automated syntax, Native Messaging bridge, and theme tests passed before manual validation.
