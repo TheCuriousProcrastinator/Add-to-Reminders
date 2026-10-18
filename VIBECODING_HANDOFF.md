@@ -1,3 +1,16 @@
+## Chrome Web Store package 0.1.19 - 2026-10-18
+
+- Version: 0.1.19.
+- User confirmed the dynamic theme functionality: PASS.
+- Package: `~/Downloads/Add-to-Reminders-0.1.19-Chrome-Web-Store.zip`.
+- ZIP SHA-256: `c481192c8fb91b329de84cf726a697c116300dc44cb6d6c2f43f7ff6bf3a447d`.
+- Extension tests and ZIP integrity verified locally.
+- Production and development extension host identities remain separate.
+- Companion Doit Then v1.0.26 release commit: `bbbf04dc4bd0a2cb59560619a58158b34d19e40e`.
+- Manifest key excluded from Chrome Web Store upload ZIP.
+- Chrome Web Store submission remains manual and unverified.
+- GitHub Actions remain manual-only.
+
 
 ## 2026-10-18 validated dynamic Doit Then palettes
 
