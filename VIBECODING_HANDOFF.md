@@ -1,3 +1,16 @@
+## CURRENT VERIFIED STATE — 2026-10-18 (READ FIRST)
+
+- Repository: `TheCuriousProcrastinator/Add-to-Reminders`, default branch `main`, verified source HEAD before this documentation update: `c6d222d96ff52e61b5604949eaff2f7943171530`.
+- Source `chrome-extension/manifest.json` version: **0.2.1** (Manifest V3). Its development `key` is retained for stable unpacked ID `fdkkbdcnkigfhiabomhklbfapojbpdol`; the submitted Web Store package omitted that key.
+- User reported production Chrome Web Store extension **0.2**, then **submitted 0.2.1 for review** on 2026-10-18. **Approval and publication of 0.2.1 remain unverified.** Production extension ID: `nofdmceaajfglgpldmibhggabdjgbgnf`.
+- The 0.2.1 submission includes dynamic light/dark HEX palettes from Doit Then, Paper Ember/Carbon Ember standalone fallback, and **the four icons from installed 0.2**. Regression tests and isolated local packaging checks passed.
+- The submitted `Add-to-Reminders-0.2.1-Chrome-Web-Store.zip` was later reported **missing from its original Downloads path**. Its final SHA-256 and current local availability cannot be verified; GitHub contains the matching version/source and preserved icon files, but the submitted ZIP itself is not stored in this repository.
+- Companion Doit Then **v1.0.26, build 40** was published and verified. Release source commit: `bbbf04dc4bd0a2cb59560619a58158b34d19e40e`.
+- Separate macOS helper's latest verified GitHub Release is **v0.1.4**; the app's native host is preferred, with helper fallback when unavailable.
+- Next external dependency: **Chrome Web Store review decision for 0.2.1**. When approved/published, verify production appearance/theme changes and reminder capture against Doit Then v1.0.26. No new extension change is authorized here.
+- **Authority:** repository/source and actual Chrome Web Store dashboard first, this CURRENT section second. Older dated `current`, `next task`, `publication state`, `0.1.x` and packaging instructions below are **historical snapshots** where superseded. Preserve debugging detail but never downgrade the source version or submit the obsolete 0.1.19 ZIP.
+- Only the handoff is changed by this documentation update; fetch updated `main` before editing the local checkout. No GitHub Actions run automatically.
+
 ## Chrome extension 0.2.1 submitted - 2026-10-18
 
 - Chrome Web Store version 0.2.1 was submitted by the user.
@@ -14,7 +27,7 @@
 - Companion Doit Then 1.0.26 build 40 is published.
 - GitHub Actions remain manual-only.
 
-## Chrome Web Store package 0.1.19 - 2026-10-18
+## Historical 0.1.19 package (not submitted; superseded by 0.2.1)
 
 - Version: 0.1.19.
 - User confirmed the dynamic theme functionality: PASS.
@@ -24,7 +37,7 @@
 - Production and development extension host identities remain separate.
 - Companion Doit Then v1.0.26 release commit: `bbbf04dc4bd0a2cb59560619a58158b34d19e40e`.
 - Manifest key excluded from Chrome Web Store upload ZIP.
-- Chrome Web Store submission remains manual and unverified.
+- This 0.1.19 package was **not submitted**; the user submitted the subsequent 0.2.1 package for review.
 - GitHub Actions remain manual-only.
 
 
@@ -54,14 +67,11 @@
 - Reminder capture and other extension functionality are preserved.
 - Development and production native-host identities remain separate.
 
-### Status and next steps
+### Historical pre-release status (superseded)
 
-- Local development validation: PASS.
-- Chrome Web Store publication has not occurred.
-- No production app or installed store extension was modified.
-- Coordinate extension distribution with the compatible
-  Doit Then app release after final local validation.
-- Do not trigger GitHub Actions automatically.
+- Local development validation was PASS.
+- Subsequently, Doit Then v1.0.26/build 40 was published, and Chrome extension 0.2.1 was submitted for review; its store approval/publication is unverified.
+- GitHub Actions remain manual-only.
 
 # VIBECODING_HANDOFF.md
 
@@ -134,53 +144,23 @@ A separate native QuickAdd app exists in another repository and must not be mixe
 
 Because this file is committed after the code HEAD above, always verify the actual current GitHub HEAD before changing anything.
 
-## Current version and release state
+## Current version and release state (verified 2026-10-18)
 
-**Current-versus-historical clarification:** Chrome extension source on `main` is **0.1.18**. Earlier sections headed `0.1.17` describe the previously completed 0.1.17 Web Store release; they do not establish that 0.1.18 is published to the Chrome Web Store. The separate native helper's latest verified GitHub Release remains **v0.1.4**. Do not infer store publication from `manifest.json`.
+### Chrome extension source and distribution
 
-### Chrome extension
+- `main` manifest version: **0.2.1**, Manifest V3; `Add Website to Reminders` listing name, `Add to Reminders` action.
+- Popup: `popup.html`; options: `options.html`; keyboard shortcut: `Alt+Shift+R` on macOS.
+- Manifest permissions: `activeTab`, `storage`, `nativeMessaging`, `contextMenus`; no host permissions.
+- Source manifest intentionally includes a development `key`; Web Store ZIP omits the copied `key` without changing other manifest permissions.
+- The user reported Chrome Web Store version **0.2** and submitted **0.2.1** for review. Approval/publication of 0.2.1 is **not verified**. Check the Chrome Web Store dashboard, not GitHub, for review state.
 
-Verified in `chrome-extension/manifest.json` on `main`:
+### Separate native helper release
 
-- Manifest V3
-- source version on current `main`: **0.1.18** (verified against `chrome-extension/manifest.json` on 2026-10-13; Chrome Web Store publication for 0.1.18 is **not verified**)
-- store/listing name in manifest: `Add Website to Reminders`
-- action title: `Add to Reminders`
-- default popup: `popup.html`
-- options page: `options.html`
-- keyboard command: `Alt+Shift+R` on macOS
-- development manifest intentionally contains a `"key"` to keep the unpacked extension ID stable
+Latest verified GitHub Release: **v0.1.4**, `AddToRemindersHelper-0.1.4.pkg`, SHA-256 `43aa22cdb6ad26b103024c4a9eeb21a81db7c9ebcd92bdb2d4037d454eb8a524`; macOS 14+, Universal 2, ad-hoc signed. Supports Chrome and Chrome for Testing. The production app's native messaging host is preferred.
 
-Current source permissions:
+### Historical store context
 
-- `activeTab`
-- `storage`
-- `nativeMessaging`
-- `contextMenus`
-
-No host permissions are present in the current manifest.
-
-### Helper release
-
-Latest verified GitHub Release:
-
-- tag: **v0.1.4**
-- name: `Add to Reminders Helper 0.1.4`
-- asset: `AddToRemindersHelper-0.1.4.pkg`
-- SHA-256: `43aa22cdb6ad26b103024c4a9eeb21a81db7c9ebcd92bdb2d4037d454eb8a524`
-- macOS 14+
-- Universal 2
-- ad-hoc signed, not Developer ID signed
-- installs Native Messaging support for regular Chrome and Chrome for Testing
-
-### Chrome Web Store
-
-Historical handoff states:
-
-- Web Store version 0.1.5 was approved on 2026-08-31.
-- The previous chat did not verify whether 0.1.5 was manually published.
-
-GitHub cannot verify Chrome Web Store publication state. Treat current Approved/Published status as **unverified** until checked directly in the Chrome Web Store dashboard.
+Chrome Web Store 0.1.5 approval was recorded for 2026-08-31, and 0.1.17 publication was confirmed on 2026-10-03. Those are historical milestones, **not** the current version. The later installed production version was 0.2; the present submission is 0.2.1.
 
 ## Separate QuickAdd project
 
@@ -656,13 +636,15 @@ Before packaging:
 - verify all imported local JS modules exist in package
 - copy manifest and remove only the packaged `"key"`
 - verify the exact whitelist
-- final ZIP goes into local `dist/`
+- Place the final review ZIP in a persistent, verified location (historically `dist/`; the 0.2.1 submission used Downloads). Verify its continued existence if a later step needs the exact bytes.
 
 Do not use `/tmp` as the final Web Store artifact location.
 
-Naming convention:
+Historical naming convention:
 
 `AddToReminders-<version>-webstore.zip`
+
+The submitted 0.2.1 package used `Add-to-Reminders-0.2.1-Chrome-Web-Store.zip` in Downloads. Naming alone does not verify package contents or continued availability.
 
 ## Versioning rule
 
@@ -815,9 +797,7 @@ Historical handoff records:
 - helper v0.1.4 installs manifests for regular Chrome and Chrome for Testing
 - Chrome Web Store version 0.1.5 was approved on 2026-08-31
 
-Current publication state is unverified.
-
-Do not replace or publish a store draft without checking the current dashboard first.
+For the **current** cycle, the user submitted **0.2.1** on 2026-10-18 after reporting production version **0.2**. Approval/publication of 0.2.1 remains unverified; check the store dashboard before taking further publication action.
 
 ## Important UX and product decisions
 
@@ -873,45 +853,33 @@ Fixed:
 
 Open/unverified:
 
-- Chrome Web Store 0.1.5 current publication status
-- whether a local `dist/AddToReminders-0.1.14-webstore.zip` currently exists, because `dist/` is ignored and cannot be verified from GitHub
-- local working-tree cleanliness cannot be verified from GitHub
-- no current GitHub Actions validation exists
+- Chrome Web Store 0.2.1 review outcome and publication status (check dashboard).
+- Submitted 0.2.1 ZIP was missing from Downloads during subsequent handoff/commit work; no current copy or SHA-256 has been verified.
+- Local working-tree cleanliness cannot be verified from GitHub; inspect before the next edit.
+- Optional GitHub Actions clean-environment validation was not run and is not required.
 
 ## Exact next development task
 
-Before changing code:
+1. Wait for the **Chrome Web Store 0.2.1 review decision**. It has been submitted; approval and publication have **not** been verified.
+2. After publication, test production theme synchronization and reminder capture against **Doit Then v1.0.26/build 40**, preserving production/development native-host separation.
+3. Before any *new* development, fetch `origin`, verify the exact branch and HEAD against the source of truth, and inspect `git status --short`. Do not reset, stash, merge, or overwrite unrelated local changes.
+4. Begin new code work only when the user requests a specific change. Follow mandatory local build/tests and manual validation before commit or push.
 
-1. Verify local checkout matches GitHub `main`.
-2. Verify local manifest version is 0.1.14.
-3. Inspect local `dist/` contents.
-4. Check Chrome Web Store dashboard for the current published/draft state.
-5. Run baseline JS/parser validation.
-6. Ask the user which next feature or bug to work on if none is specified.
-
-Do not assume the historical 0.1.14 Web Store package exists just because source version 0.1.14 is in GitHub.
-
-## Suggested local state check
+## Suggested read-only local state check
 
 ```bash
 cd "/Users/alex/Documents/Vibe Coding/AddToReminders" || exit 1
-set -e
 export GIT_PAGER=cat
-
 git fetch origin
-git switch main
-git pull --ff-only origin main
-
-printf '===== VERSION =====\n'
-python3 -c 'import json; print(json.load(open("chrome-extension/manifest.json"))["version"])'
-
-printf '\n===== GIT =====\n'
 git status --short
+git branch --show-current
+git rev-parse HEAD
+git rev-parse origin/main
+python3 -c 'import json; print(json.load(open("chrome-extension/manifest.json"))["version"])'
 git --no-pager log -5 --oneline --decorate
-
-printf '\n===== DIST =====\n'
-find dist -maxdepth 1 -type f -print 2>/dev/null | sort || true
 ```
+
+Do not switch branches or pull automatically when unrelated local changes are present.
 
 ## Handoff maintenance rule
 
