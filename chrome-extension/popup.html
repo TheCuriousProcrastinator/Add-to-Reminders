@@ -1371,6 +1371,50 @@
     }
   </style>
 
+  <!-- Default colors before the native host replies. -->
+  <style id="standalone-doitthen-colors">
+    :root {
+      color-scheme: light;
+      --bg: #F7F7F5;
+      --card: #FFFFFF;
+      --panel: #FFFFFF;
+      --text: #1F1F1D;
+      --secondary: #686661;
+      --separator: #DDDAD4;
+      --control: #FAFAF8;
+      --control-bg: #FAFAF8;
+      --control-border: #DDDAD4;
+      --border: #DDDAD4;
+      --row-hover: #ECEAE5;
+      --accent: #D65A26;
+      --accent-hover: #C64F1A;
+      --focus: #FBE9E1;
+      --smart-bg: #FBE9E1;
+      --on-accent: #11110F;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #171716;
+        --card: #22211F;
+        --panel: #22211F;
+        --text: #F2F1EE;
+        --secondary: #B1AEA6;
+        --separator: #3C3934;
+        --control: #292825;
+        --control-bg: #292825;
+        --control-border: #3C3934;
+        --border: #3C3934;
+        --row-hover: #302E2B;
+        --accent: #FF8A52;
+        --accent-hover: #C4511A;
+        --focus: #3A241B;
+        --smart-bg: #3A241B;
+        --on-accent: #171716;
+      }
+    }
+  </style>
 </head>
 
 <body>

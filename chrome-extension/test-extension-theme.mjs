@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 
 import {
   resolveDoItThenTheme,
+  resolveStandaloneTheme,
   cssVariablesForTheme
 } from "./extension-theme.js";
 
@@ -178,4 +179,102 @@ assert.equal(
 
 console.log(
   "Extension theme mapping tests passed"
+);
+
+
+// Dynamic colors must override existing built-in shades.
+const dynamic = {
+  ...base,
+  appearanceMode: "light",
+  palettes: {
+    light: {
+      canvas: "#010203",
+      surface: "#FFFFFF",
+      surfaceRaised: "#EEEEEE",
+      hover: "#CCCCCC",
+      border: "#AAAAAA",
+      textPrimary: "#111111",
+      textSecondary: "#222222",
+      accent: "#A1B2C3",
+      accentStrong: "#B2C3D4",
+      accentSoft: "#DDEEFF",
+      onAccent: "#000000"
+    },
+    dark: {
+      canvas: "#101112",
+      surface: "#202122",
+      surfaceRaised: "#303132",
+      hover: "#404142",
+      border: "#505152",
+      textPrimary: "#F1F2F3",
+      textSecondary: "#A1A2A3",
+      accent: "#334455",
+      accentStrong: "#445566",
+      accentSoft: "#556677",
+      onAccent: "#FFFFFF"
+    }
+  }
+};
+
+assert.equal(
+  resolveDoItThenTheme(dynamic, false).accent,
+  "#A1B2C3"
+);
+
+assert.equal(
+  cssVariablesForTheme(
+    resolveDoItThenTheme(dynamic, false)
+  )["--bg"],
+  "#010203"
+);
+
+assert.equal(
+  resolveDoItThenTheme(
+    { ...dynamic, appearanceMode: "system" },
+    true
+  ).accent,
+  "#334455"
+);
+
+// Standalone mode follows light/dark appearance.
+assert.equal(
+  resolveStandaloneTheme(false).id,
+  "paperEmber"
+);
+
+assert.equal(
+  resolveStandaloneTheme(false).accent,
+  "#D65A26"
+);
+
+assert.equal(
+  resolveStandaloneTheme(true).id,
+  "carbonEmber"
+);
+
+assert.equal(
+  resolveStandaloneTheme(true).accent,
+  "#FF8A52"
+);
+
+// Invalid CSS must not be applied. Older protocol
+// colors remain available as a safe fallback.
+const malicious = {
+  ...dynamic,
+  palettes: {
+    ...dynamic.palettes,
+    light: {
+      ...dynamic.palettes.light,
+      accent: "red; background:blue"
+    }
+  }
+};
+
+assert.equal(
+  resolveDoItThenTheme(malicious, false).accent,
+  "#D65A26"
+);
+
+console.log(
+  "Dynamic palettes and standalone fallback tests passed"
 );

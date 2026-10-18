@@ -94,6 +94,43 @@ const PALETTES = {
   }
 };
 
+const PALETTE_KEYS = [
+  "canvas", "surface", "surfaceRaised",
+  "hover", "border", "textPrimary",
+  "textSecondary", "accent", "accentStrong",
+  "accentSoft", "onAccent"
+];
+
+function dynamicPalette(value, mode) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return null;
+  }
+
+  if (!PALETTE_KEYS.every(key =>
+    typeof value[key] === "string" &&
+    /^#[0-9a-fA-F]{6}$/.test(value[key])
+  )) {
+    return null;
+  }
+
+  return Object.fromEntries([
+    ["mode", mode],
+    ...PALETTE_KEYS.map(key => [key, value[key]])
+  ]);
+}
+
+export function resolveStandaloneTheme(prefersDark) {
+  const id = prefersDark
+    ? "carbonEmber"
+    : "paperEmber";
+
+  return { id, ...PALETTES[id] };
+}
+
 const THEME_VARIABLES = [
   "--bg",
   "--card",
@@ -150,8 +187,18 @@ export function resolveDoItThenTheme(
     return null;
   }
 
+  const mode =
+    info.appearanceMode === "system"
+      ? (prefersDark ? "dark" : "light")
+      : info.appearanceMode;
+
+  // The app supplies the colors. Older app versions
+  // continue using the extension's existing palettes.
   const palette =
-    PALETTES[themeID];
+    dynamicPalette(
+      info.palettes?.[mode],
+      mode
+    ) ?? PALETTES[themeID];
 
   if (!palette) {
     return null;
@@ -269,35 +316,25 @@ function clearAppliedTheme() {
 export async function applyDoItThenTheme() {
   clearAppliedTheme();
 
-  let info;
+  let info = null;
 
   try {
-    info =
-      await getDoItThenThemeInfo();
+    info = await getDoItThenThemeInfo();
   } catch {
-    return {
-      source: "system",
-      theme: null
-    };
+    // Missing app or host uses the standalone theme.
   }
 
-  const media =
-    window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    );
+  const media = window.matchMedia(
+    "(prefers-color-scheme: dark)"
+  );
 
-  const theme =
-    resolveDoItThenTheme(
-      info,
-      media.matches
-    );
+  const appTheme = resolveDoItThenTheme(
+    info,
+    media.matches
+  );
 
-  if (!theme) {
-    return {
-      source: "system",
-      theme: null
-    };
-  }
+  const theme = appTheme ??
+    resolveStandaloneTheme(media.matches);
 
   const root =
     document.documentElement;
@@ -326,7 +363,7 @@ export async function applyDoItThenTheme() {
     theme.id;
 
   return {
-    source: "doitthen",
+    source: appTheme ? "doitthen" : "standalone",
     theme
   };
 }

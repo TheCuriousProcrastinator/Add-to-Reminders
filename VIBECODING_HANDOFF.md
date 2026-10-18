@@ -1,3 +1,39 @@
+
+## 2026-10-18 validated dynamic Doit Then palettes
+
+- Branch: `vibe/dynamic-chrome-palettes`.
+- Starting source commit: `580ab369e63e8278e7ec5e22854f09e7f971593b`.
+- Exact validated extension checkout: `/Users/alex/Desktop/tmp/DoitThen-dynamic-theme.4d80zR/Add-to-Reminders`.
+- Companion app checkout: `/Users/alex/Desktop/tmp/DoitThen-dynamic-theme.4d80zR/DoitThen`.
+- User explicitly confirmed local validation: PASS.
+- Extension Node regression tests passed.
+- Tested with the locally built Doit Then development app.
+
+### Implementation
+
+- `chrome-extension/extension-theme.js` accepts validated HEX
+  palettes supplied by Doit Then.
+- The existing native `themeInfo` schema remains version 1.
+- Older Doit Then apps continue using the existing bundled
+  named palettes.
+- Without a connected app, the extension uses built-in
+  Paper Ember in light appearance and Carbon Ember in dark.
+- `popup.html` uses those fallback colors from initial rendering,
+  replacing the generic blue appearance.
+- Theme tests cover dynamic colors, legacy compatibility,
+  unsafe CSS rejection, and standalone fallback.
+- Reminder capture and other extension functionality are preserved.
+- Development and production native-host identities remain separate.
+
+### Status and next steps
+
+- Local development validation: PASS.
+- Chrome Web Store publication has not occurred.
+- No production app or installed store extension was modified.
+- Coordinate extension distribution with the compatible
+  Doit Then app release after final local validation.
+- Do not trigger GitHub Actions automatically.
+
 # VIBECODING_HANDOFF.md
 
 ## Publish/release command - standing authorization (2026-10-13)
