@@ -1,3 +1,19 @@
+## Chrome extension 0.2.1 submitted - 2026-10-18
+
+- Chrome Web Store version 0.2.1 was submitted by the user.
+- User confirmed local package preparation succeeded.
+- Submitted package contained the dynamic theme implementation.
+- Four icons from installed extension 0.2 were preserved.
+- Installed 0.2 runtime was checked against the original baseline.
+- Source icons were restored from the same installed 0.2 files
+  used to prepare the submitted package.
+- Local extension regression tests passed.
+- The submitted ZIP was subsequently unavailable at its
+  original Downloads path; its original SHA-256 is unverified.
+- Chrome Web Store approval/publication remains unverified.
+- Companion Doit Then 1.0.26 build 40 is published.
+- GitHub Actions remain manual-only.
+
 ## Chrome Web Store package 0.1.19 - 2026-10-18
 
 - Version: 0.1.19.
