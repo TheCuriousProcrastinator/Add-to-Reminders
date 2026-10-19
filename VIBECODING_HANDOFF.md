@@ -1,15 +1,34 @@
 <!-- VIBE-CURRENT-STATE:START -->
 ## Current repository facts (generated, authoritative only for the facts listed)
 
-- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `main`.
+- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `vibe/reconcile-installed-chrome-022-20261019-192219`.
 - Version data below is read from the **Git index** (the files staged for commit).
-- Source `chrome-extension/manifest.json`: version `0.2.1`.
+- Source `chrome-extension/manifest.json`: version `0.2.2`.
 - GitHub publication: Published GitHub release `v0.1.4` (reported by GitHub API). Other distribution channels are **unverified**.
 - This section does **not** establish local build success, manual QA, App Store/Chrome Web Store approval, notarization, live website deployment, or release-asset integrity.
 - The narrative below maintains architecture, decisions, issues and test evidence. Its older status and version claims are **historical** unless explicitly reconciled with this section.
 - Before executable changes, inspect the actual checkout and validate the **exact files** on the real Mac. No automatic GitHub Actions.
 
 <!-- VIBE-CURRENT-STATE:END -->
+
+## 2026-10-19 - Chrome 0.2.2 source reconciliation
+
+- User explicitly confirmed local validation: PASS.
+- Installed production Chrome extension ID: `nofdmceaajfglgpldmibhggabdjgbgnf`.
+- Installed production version: **0.2.2**.
+- Previous GitHub `main` source version: **0.2.1**.
+- The installed 0.2.2 extension differed from GitHub 0.2.1 in `popup.html`, `popup.js`, and `extension-theme.js`.
+- The exact installed runtime files were copied into the local GitHub checkout.
+- `manifest.json` was updated to version **0.2.2**, preserving its development key.
+- Theme regression expectations were updated to reflect the installed colors.
+- JavaScript syntax checks and extension regression tests passed locally.
+- User confirmed Chrome theme synchronization and reminder capture worked.
+- This commit synchronizes GitHub source with installed production 0.2.2.
+- No Chrome Web Store upload or publication was performed.
+- No Doit Then application files were changed.
+- GitHub Actions remain manual-only.
+- Next: continue development from the reconciled GitHub `main`.
+
 
 ## CURRENT VERIFIED STATE — 2026-10-18 (READ FIRST)
 

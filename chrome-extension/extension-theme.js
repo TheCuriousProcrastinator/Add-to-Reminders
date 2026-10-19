@@ -293,74 +293,80 @@ export function cssVariablesForTheme(
   };
 }
 
-function clearAppliedTheme() {
-  const root =
-    document.documentElement;
+export function cacheRecordForThemeInfo(info) {
+  const light = resolveDoItThenTheme(info, false);
+  const dark = resolveDoItThenTheme(info, true);
 
-  for (
-    const variable of
-    THEME_VARIABLES
-  ) {
-    root.style.removeProperty(
-      variable
-    );
-  }
+  if (!light || !dark) return null;
 
-  root.style.removeProperty(
-    "color-scheme"
-  );
+  const record = theme => ({
+    id: theme.id,
+    mode: theme.mode,
+    colors: cssVariablesForTheme(theme)
+  });
 
-  delete root.dataset.doitthenTheme;
+  return {
+    version: 1,
+    light: record(light),
+    dark: record(dark)
+  };
 }
 
 export async function applyDoItThenTheme() {
-  clearAppliedTheme();
-
   let info = null;
 
   try {
     info = await getDoItThenThemeInfo();
   } catch {
-    // Missing app or host uses the standalone theme.
+    // Standalone colors remain available.
   }
 
-  const media = window.matchMedia(
+  await window.doitThenThemeBootReady;
+
+  const prefersDark = window.matchMedia(
     "(prefers-color-scheme: dark)"
-  );
+  ).matches;
 
   const appTheme = resolveDoItThenTheme(
-    info,
-    media.matches
+    info, prefersDark
   );
 
   const theme = appTheme ??
-    resolveStandaloneTheme(media.matches);
+    resolveStandaloneTheme(prefersDark);
 
-  const root =
-    document.documentElement;
+  const root = document.documentElement;
+  const variables = cssVariablesForTheme(theme);
 
-  const variables =
-    cssVariablesForTheme(
-      theme
-    );
-
-  for (
-    const [name, value] of
-    Object.entries(variables)
-  ) {
-    root.style.setProperty(
-      name,
-      value
-    );
+  for (const [name, value] of Object.entries(variables)) {
+    if (root.style.getPropertyValue(name) !== value) {
+      root.style.setProperty(name, value);
+    }
   }
 
-  root.style.setProperty(
-    "color-scheme",
-    theme.mode
-  );
+  if (root.style.getPropertyValue("color-scheme") !== theme.mode) {
+    root.style.setProperty("color-scheme", theme.mode);
+  }
 
-  root.dataset.doitthenTheme =
-    theme.id;
+  root.dataset.doitthenTheme = theme.id;
+
+  if (appTheme) {
+    const cache = cacheRecordForThemeInfo(info);
+
+    if (cache) {
+      void chrome.storage.local.get(
+        "doitThenCachedTheme"
+      ).then(stored => {
+        if (
+          JSON.stringify(stored.doitThenCachedTheme) !==
+          JSON.stringify(cache)
+        ) {
+          return chrome.storage.local.set({
+            doitThenCachedTheme: cache
+          });
+        }
+      }).catch(() => {});
+    }
+  }
 
   return {
     source: appTheme ? "doitthen" : "standalone",
