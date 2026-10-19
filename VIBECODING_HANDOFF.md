@@ -1,3 +1,16 @@
+<!-- VIBE-CURRENT-STATE:START -->
+## Current repository facts (generated, authoritative only for the facts listed)
+
+- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `main`.
+- Version data below is read from the **Git index** (the files staged for commit).
+- Source `chrome-extension/manifest.json`: version `0.2.1`.
+- GitHub publication: Published GitHub release `v0.1.4` (reported by GitHub API). Other distribution channels are **unverified**.
+- This section does **not** establish local build success, manual QA, App Store/Chrome Web Store approval, notarization, live website deployment, or release-asset integrity.
+- The narrative below maintains architecture, decisions, issues and test evidence. Its older status and version claims are **historical** unless explicitly reconciled with this section.
+- Before executable changes, inspect the actual checkout and validate the **exact files** on the real Mac. No automatic GitHub Actions.
+
+<!-- VIBE-CURRENT-STATE:END -->
+
 ## CURRENT VERIFIED STATE — 2026-10-18 (READ FIRST)
 
 - Repository: `TheCuriousProcrastinator/Add-to-Reminders`, default branch `main`, verified source HEAD before this documentation update: `c6d222d96ff52e61b5604949eaff2f7943171530`.
