@@ -1,7 +1,7 @@
 <!-- VIBE-CURRENT-STATE:START -->
 ## Current repository facts (generated, authoritative only for the facts listed)
 
-- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `main`.
+- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `vibe/date-menu-theme-20261019-155757-12032`.
 - Version data below is read from the **Git index** (the files staged for commit).
 - Source `chrome-extension/manifest.json`: version `0.2.1`.
 - GitHub publication: Published GitHub release `v0.1.4` (reported by GitHub API). Other distribution channels are **unverified**.
@@ -10,6 +10,26 @@
 - Before executable changes, inspect the actual checkout and validate the **exact files** on the real Mac. No automatic GitHub Actions.
 
 <!-- VIBE-CURRENT-STATE:END -->
+
+## 2026-10-19 - Primary accent consistency
+
+- User explicitly confirmed local development validation: PASS.
+- Exact locally tested checkout: `/Users/alex/Documents/Vibe Coding/.vibe-validation/Extension-20261019-155757-12032`.
+- Development branch: `vibe/date-menu-theme-20261019-155757-12032`.
+- Starting HEAD: `96cf66a2b679904fe07f72dcfb12ae7b950e6f4d`.
+- Source changes: `chrome-extension/extension-theme.js`, `chrome-extension/popup.html`, and `chrome-extension/test-extension-theme.mjs`.
+- Mint Candy fallback accent text is now white.
+- Add Reminder uses a solid theme accent instead of the previous gradient, with a stronger hover state.
+- Existing dynamic theme bridge remains compatible with the six Doit Then themes.
+- Theme, native-bridge, and date-parser Node tests passed.
+- Unpacked development extension was tested with the development Doit Then app, and the user confirmed PASS.
+- Development extension ID: `fdkkbdcnkigfhiabomhklbfapojbpdol`.
+- Production extension ID: `nofdmceaajfglgpldmibhggabdjgbgnf`.
+- Source manifest version remains 0.2.1. Chrome Web Store publication status for this source is unverified.
+- No production extension publication or new helper package is included in this development commit.
+- GitHub Actions remain manual-only.
+- Next step: preserve validated development behavior; package and publish only through the separately authorized release workflow.
+
 
 ## CURRENT VERIFIED STATE — 2026-10-18 (READ FIRST)
 

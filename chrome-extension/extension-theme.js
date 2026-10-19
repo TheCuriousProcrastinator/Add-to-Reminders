@@ -45,7 +45,7 @@ const PALETTES = {
     accent: "#D43E86",
     accentStrong: "#BF3276",
     accentSoft: "#F8E0EC",
-    onAccent: "#000000"
+    onAccent: "#FFFFFF"
   },
 
   carbonEmber: {

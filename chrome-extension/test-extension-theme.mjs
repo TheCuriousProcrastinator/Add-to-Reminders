@@ -173,7 +173,7 @@ assert.equal(
 
   assert.equal(
     variables["--on-accent"],
-    "#000000"
+    "#FFFFFF"
   );
 }
 
