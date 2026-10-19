@@ -34,7 +34,7 @@ const base = {
 
   assert.equal(
     theme.accent,
-    "#D65A26"
+    "#C64F1A"
   );
 }
 
@@ -168,13 +168,39 @@ assert.equal(
 
   assert.equal(
     variables["--accent"],
-    "#D43E86"
+    "#CE3B82"
   );
 
   assert.equal(
     variables["--on-accent"],
     "#FFFFFF"
   );
+}
+
+
+const accentPairs = [
+  ["paperEmber", "light", "#C64F1A", "#FFFFFF"],
+  ["polarInk", "light", "#0E7C8C", "#FFFFFF"],
+  ["mintCandy", "light", "#CE3B82", "#FFFFFF"],
+  ["carbonEmber", "dark", "#FF8A52", "#171716"],
+  ["midnightCircuit", "dark", "#4CC9F0", "#0F141A"],
+  ["plumStatic", "dark", "#E58ACB", "#171319"]
+];
+
+for (const [id, mode, accent, text] of accentPairs) {
+  const theme = resolveDoItThenTheme({
+    ...base,
+    appearanceMode: mode,
+    lightTheme: mode === "light" ? id : "paperEmber",
+    darkTheme: mode === "dark" ? id : "carbonEmber"
+  }, mode === "dark");
+
+  assert.equal(theme.accent, accent);
+  assert.equal(theme.onAccent, text);
+
+  const variables = cssVariablesForTheme(theme);
+  assert.equal(variables["--accent"], accent);
+  assert.equal(variables["--on-accent"], text);
 }
 
 console.log(
@@ -244,7 +270,7 @@ assert.equal(
 
 assert.equal(
   resolveStandaloneTheme(false).accent,
-  "#D65A26"
+  "#C64F1A"
 );
 
 assert.equal(
@@ -272,7 +298,7 @@ const malicious = {
 
 assert.equal(
   resolveDoItThenTheme(malicious, false).accent,
-  "#D65A26"
+  "#C64F1A"
 );
 
 console.log(

@@ -1,7 +1,7 @@
 <!-- VIBE-CURRENT-STATE:START -->
 ## Current repository facts (generated, authoritative only for the facts listed)
 
-- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `vibe/date-menu-theme-20261019-155757-12032`.
+- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `vibe/theme-accent-parity-20261019-181151`.
 - Version data below is read from the **Git index** (the files staged for commit).
 - Source `chrome-extension/manifest.json`: version `0.2.1`.
 - GitHub publication: Published GitHub release `v0.1.4` (reported by GitHub API). Other distribution channels are **unverified**.
@@ -10,6 +10,27 @@
 - Before executable changes, inspect the actual checkout and validate the **exact files** on the real Mac. No automatic GitHub Actions.
 
 <!-- VIBE-CURRENT-STATE:END -->
+
+## 2026-10-19 - Six-theme accent parity (validated)
+
+- User explicitly confirmed local manual testing: PASS.
+- Development branch: `vibe/theme-accent-parity-20261019-181151`.
+- Starting HEAD: `240d8ad997e37121a9d4e1f2f1c6538a7f3e6f0d`.
+- Exact tested checkout: `/Users/alex/Documents/Vibe Coding/.vibe-validation/Extension-20261019-155757-12032`.
+- Changed source: `extension-theme.js`, `popup.html`, and `test-extension-theme.mjs`.
+- Built-in fallback accent colors now match the companion Doit Then palettes.
+- Paper Ember uses `#C64F1A` with white text; Mint Candy uses `#CE3B82` with white text.
+- All six accent/foreground combinations have regression assertions.
+- Dynamic app-to-extension palette synchronization remains supported.
+- Node theme, native bridge, and date-parser tests passed.
+- Development extension was tested alongside the freshly built macOS app.
+- User confirmed UI validation passed.
+- Chrome extension manifest remains version 0.2.1.
+- Chrome Web Store publication of this change has not occurred.
+- Production native host and extension are separate from development.
+- GitHub Actions remain manual-only.
+- Next: continue development or prepare a validated release when explicitly requested.
+
 
 ## 2026-10-19 - Primary accent consistency
 

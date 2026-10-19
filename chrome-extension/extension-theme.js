@@ -12,10 +12,10 @@ const PALETTES = {
     border: "#DDDAD4",
     textPrimary: "#1F1F1D",
     textSecondary: "#686661",
-    accent: "#D65A26",
-    accentStrong: "#C64F1A",
+    accent: "#C64F1A",
+    accentStrong: "#AC4111",
     accentSoft: "#FBE9E1",
-    onAccent: "#11110F"
+    onAccent: "#FFFFFF"
   },
 
   polarInk: {
@@ -42,7 +42,7 @@ const PALETTES = {
     border: "#CFE9DF",
     textPrimary: "#24302C",
     textSecondary: "#56685F",
-    accent: "#D43E86",
+    accent: "#CE3B82",
     accentStrong: "#BF3276",
     accentSoft: "#F8E0EC",
     onAccent: "#FFFFFF"
