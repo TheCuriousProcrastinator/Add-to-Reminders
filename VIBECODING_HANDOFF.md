@@ -1,15 +1,44 @@
 <!-- VIBE-CURRENT-STATE:START -->
 ## Current repository facts (generated, authoritative only for the facts listed)
 
-- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `main`.
+- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `vibe/instant-popup-20261019070111`.
 - Version data below is read from the **Git index** (the files staged for commit).
-- Source `chrome-extension/manifest.json`: version `0.2.1`.
+- Source `chrome-extension/manifest.json`: version `0.2.2`.
 - GitHub publication: Published GitHub release `v0.1.4` (reported by GitHub API). Other distribution channels are **unverified**.
 - This section does **not** establish local build success, manual QA, App Store/Chrome Web Store approval, notarization, live website deployment, or release-asset integrity.
 - The narrative below maintains architecture, decisions, issues and test evidence. Its older status and version claims are **historical** unless explicitly reconciled with this section.
 - Before executable changes, inspect the actual checkout and validate the **exact files** on the real Mac. No automatic GitHub Actions.
 
 <!-- VIBE-CURRENT-STATE:END -->
+
+
+## CURRENT DEVELOPMENT STATE - 2026-10-19
+
+- Repository: `TheCuriousProcrastinator/Add-to-Reminders`.
+- Development branch: `vibe/instant-popup-20261019070111`.
+- Base: `a74a03d9296b3003d44a648cc55c10348c096958`.
+- Development extension version: **0.2.2**.
+- Local automated validation: PASS.
+- User-confirmed manual validation: PASS.
+- Chrome unpacked development extension tested on the user's Mac.
+- Companion Doit Then development app rebuilt and launched.
+- Dynamic theme palettes remain owned by Doit Then.
+- Popup caches the latest valid light/dark palettes.
+- Cached colors are applied during startup.
+- Native theme refresh runs without blocking popup initialization.
+- Unchanged CSS values are not reapplied.
+- Initial title-field focus styling was adjusted.
+- Normal List loading behavior is intentionally unchanged.
+- Reminder capture and theme synchronization were included in manual regression testing.
+- Production Chrome extension and app were not modified.
+- Chrome Web Store publication of extension 0.2.2 has not occurred.
+- Chrome Web Store 0.2.1 approval remains unverified.
+- GitHub Actions must remain manual-only.
+- This is a validated development change, not a release.
+- Next task: await new instructions or explicit release request.
+- Older current-state entries below are historical snapshots.
+
+
 
 ## CURRENT VERIFIED STATE — 2026-10-18 (READ FIRST)
 

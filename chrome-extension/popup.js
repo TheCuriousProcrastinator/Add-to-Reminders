@@ -1077,6 +1077,8 @@ async function loadCurrentPage() {
   }
 
   titleInput.focus();
+  document.getElementById("titleShell")
+    .removeAttribute("data-initial-focus");
 
   const initialCaret =
     titleInput.value.length;
@@ -1947,7 +1949,7 @@ document.addEventListener(
 );
 
 async function init() {
-  await applyDoItThenTheme();
+  void applyDoItThenTheme().catch(() => {});
 
   const platform =
     await chrome.runtime.getPlatformInfo();

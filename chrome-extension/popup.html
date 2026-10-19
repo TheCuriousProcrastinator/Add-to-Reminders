@@ -1415,6 +1415,22 @@
       }
     }
   </style>
+  <style>
+    html:not([data-theme-ready="true"]) body {
+      visibility: hidden;
+    }
+
+    #titleShell[data-initial-focus],
+    #titleShell:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--focus);
+    }
+
+    #titleShell[data-initial-focus] {
+      transition: none;
+    }
+  </style>
+  <script src="theme-boot.js"></script>
 </head>
 
 <body>
@@ -1445,7 +1461,7 @@
       <div class="title-area">
         <label class="visually-hidden" for="title">Title</label>
 
-        <div id="titleShell">
+        <div id="titleShell" data-initial-focus>
           <div id="titleMirror" aria-hidden="true"></div>
 
           <input

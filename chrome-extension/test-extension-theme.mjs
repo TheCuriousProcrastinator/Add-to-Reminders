@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {
   resolveDoItThenTheme,
   resolveStandaloneTheme,
-  cssVariablesForTheme
+  cssVariablesForTheme,
+  cacheRecordForThemeInfo
 } from "./extension-theme.js";
 
 const base = {
@@ -278,3 +279,26 @@ assert.equal(
 console.log(
   "Dynamic palettes and standalone fallback tests passed"
 );
+
+const themeCache = cacheRecordForThemeInfo({
+  ...dynamic,
+  appearanceMode: "system"
+});
+assert.equal(themeCache.version, 1);
+assert.equal(themeCache.light.colors["--bg"], "#010203");
+assert.equal(themeCache.dark.colors["--bg"], "#101112");
+assert.equal(
+  themeCache.light.colors["--accent"], "#A1B2C3"
+);
+assert.equal(cacheRecordForThemeInfo(null), null);
+
+const forcedLightCache = cacheRecordForThemeInfo({
+  ...dynamic,
+  appearanceMode: "light"
+});
+assert.equal(forcedLightCache.dark.mode, "light");
+assert.equal(
+  forcedLightCache.dark.colors["--bg"], "#010203"
+);
+
+console.log("Instant theme cache tests passed");
