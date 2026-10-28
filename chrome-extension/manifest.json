@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Add Website to Reminders",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Add the current website to Apple Reminders.",
   "permissions": [
     "activeTab",
@@ -20,6 +20,7 @@
   "commands": {
     "_execute_action": {
       "suggested_key": {
+        "default": "Alt+Shift+R",
         "mac": "Alt+Shift+R"
       },
       "description": "Add current website to Reminders"

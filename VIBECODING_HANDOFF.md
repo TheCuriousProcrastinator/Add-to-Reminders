@@ -1,15 +1,41 @@
 <!-- VIBE-CURRENT-STATE:START -->
 ## Current repository facts (generated, authoritative only for the facts listed)
 
-- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `vibe/reconcile-installed-chrome-022-20261019-192219`.
+- Repository: `TheCuriousProcrastinator/Add-to-Reminders`; local working branch: `vibe/chrome-manifest-shortcut-023`.
 - Version data below is read from the **Git index** (the files staged for commit).
-- Source `chrome-extension/manifest.json`: version `0.2.2`.
+- Source `chrome-extension/manifest.json`: version `0.2.3`.
 - GitHub publication: Published GitHub release `v0.1.4` (reported by GitHub API). Other distribution channels are **unverified**.
 - This section does **not** establish local build success, manual QA, App Store/Chrome Web Store approval, notarization, live website deployment, or release-asset integrity.
 - The narrative below maintains architecture, decisions, issues and test evidence. Its older status and version claims are **historical** unless explicitly reconciled with this section.
 - Before executable changes, inspect the actual checkout and validate the **exact files** on the real Mac. No automatic GitHub Actions.
 
 <!-- VIBE-CURRENT-STATE:END -->
+
+## Chrome extension 0.2.3 - validated 2026-10-28
+
+- Development branch: `vibe/chrome-manifest-shortcut-023`.
+- Base HEAD: `178486350233ec8f58a1996cf721c57769809970`.
+- Chrome Web Store warning: Yellow Magnesium, missing default keyboard shortcut.
+- Added `default: Alt+Shift+R`, preserving the macOS shortcut.
+- Version increased from 0.2.2 to 0.2.3.
+- Restored missing `theme-boot.js` required for popup visibility.
+- Removed the reversed-gradient Add Reminder button hover effect.
+- Button now uses the theme's primary `--accent` token.
+- Quick Add and Chrome button colors visually matched in the user's screenshot.
+- User subsequently requested final commit and packaging.
+- JavaScript syntax, parser, native bridge, and theme tests passed locally.
+- Final ZIP contents match the previously validated theme-match preview.
+- ZIP excludes the development manifest key and includes all popup scripts.
+- Final package: `/Users/alex/Downloads/Add-to-Reminders-0.2.3-Chrome-Web-Store-FINAL.zip`.
+- SHA-256: `4b9b55cfff8c2f185ad274a966c2d1104468f66102f9bb55e2e9977e64987059`.
+- Full end-to-end reminder creation and every theme variant were not
+  separately reconfirmed after the final styling change.
+- Chrome Web Store submission and approval remain unverified.
+- Next: upload 0.2.3 to the existing Web Store listing, verify approval,
+  and check production reminder creation and theme synchronization.
+- No Do It Then app or native helper changes.
+- No GitHub Actions run.
+
 
 ## 2026-10-19 - Chrome 0.2.2 source reconciliation
 
