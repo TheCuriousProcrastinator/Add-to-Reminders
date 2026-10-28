@@ -11,1170 +11,442 @@
 
 <!-- VIBE-CURRENT-STATE:END -->
 
-## Chrome extension 0.2.3 - validated 2026-10-28
+# Add to Reminders - Development Handoff
 
-- Development branch: `vibe/chrome-manifest-shortcut-023`.
-- Base HEAD: `178486350233ec8f58a1996cf721c57769809970`.
-- Chrome Web Store warning: Yellow Magnesium, missing default keyboard shortcut.
-- Added `default: Alt+Shift+R`, preserving the macOS shortcut.
-- Version increased from 0.2.2 to 0.2.3.
-- Restored missing `theme-boot.js` required for popup visibility.
-- Removed the reversed-gradient Add Reminder button hover effect.
-- Button now uses the theme's primary `--accent` token.
-- Quick Add and Chrome button colors visually matched in the user's screenshot.
-- User subsequently requested final commit and packaging.
-- JavaScript syntax, parser, native bridge, and theme tests passed locally.
-- Final ZIP contents match the previously validated theme-match preview.
-- ZIP excludes the development manifest key and includes all popup scripts.
-- Final package: `/Users/alex/Downloads/Add-to-Reminders-0.2.3-Chrome-Web-Store-FINAL.zip`.
-- SHA-256: `4b9b55cfff8c2f185ad274a966c2d1104468f66102f9bb55e2e9977e64987059`.
-- Full end-to-end reminder creation and every theme variant were not
-  separately reconfirmed after the final styling change.
-- Chrome Web Store submission and approval remain unverified.
-- Next: upload 0.2.3 to the existing Web Store listing, verify approval,
-  and check production reminder creation and theme synchronization.
-- No Do It Then app or native helper changes.
-- No GitHub Actions run.
+Last reviewed: 2026-10-28
 
+## Project and Repository
 
-## 2026-10-19 - Chrome 0.2.2 source reconciliation
+Add to Reminders is a Chrome extension for capturing webpages
+directly into Apple Reminders on macOS.
 
-- User explicitly confirmed local validation: PASS.
-- Installed production Chrome extension ID: `nofdmceaajfglgpldmibhggabdjgbgnf`.
-- Installed production version: **0.2.2**.
-- Previous GitHub `main` source version: **0.2.1**.
-- The installed 0.2.2 extension differed from GitHub 0.2.1 in `popup.html`, `popup.js`, and `extension-theme.js`.
-- The exact installed runtime files were copied into the local GitHub checkout.
-- `manifest.json` was updated to version **0.2.2**, preserving its development key.
-- Theme regression expectations were updated to reflect the installed colors.
-- JavaScript syntax checks and extension regression tests passed locally.
-- User confirmed Chrome theme synchronization and reminder capture worked.
-- This commit synchronizes GitHub source with installed production 0.2.2.
-- No Chrome Web Store upload or publication was performed.
-- No Doit Then application files were changed.
-- GitHub Actions remain manual-only.
-- Next: continue development from the reconciled GitHub `main`.
+Product principle: Open, edit, save, done.
 
+Repository: `TheCuriousProcrastinator/Add-to-Reminders`
 
-## CURRENT VERIFIED STATE — 2026-10-18 (READ FIRST)
+Default branch: `main`
 
-- Repository: `TheCuriousProcrastinator/Add-to-Reminders`, default branch `main`, verified source HEAD before this documentation update: `c6d222d96ff52e61b5604949eaff2f7943171530`.
-- Source `chrome-extension/manifest.json` version: **0.2.1** (Manifest V3). Its development `key` is retained for stable unpacked ID `fdkkbdcnkigfhiabomhklbfapojbpdol`; the submitted Web Store package omitted that key.
-- User reported production Chrome Web Store extension **0.2**, then **submitted 0.2.1 for review** on 2026-10-18. **Approval and publication of 0.2.1 remain unverified.** Production extension ID: `nofdmceaajfglgpldmibhggabdjgbgnf`.
-- The 0.2.1 submission includes dynamic light/dark HEX palettes from Doit Then, Paper Ember/Carbon Ember standalone fallback, and **the four icons from installed 0.2**. Regression tests and isolated local packaging checks passed.
-- The submitted `Add-to-Reminders-0.2.1-Chrome-Web-Store.zip` was later reported **missing from its original Downloads path**. Its final SHA-256 and current local availability cannot be verified; GitHub contains the matching version/source and preserved icon files, but the submitted ZIP itself is not stored in this repository.
-- Companion Doit Then **v1.0.26, build 40** was published and verified. Release source commit: `bbbf04dc4bd0a2cb59560619a58158b34d19e40e`.
-- Separate macOS helper's latest verified GitHub Release is **v0.1.4**; the app's native host is preferred, with helper fallback when unavailable.
-- Next external dependency: **Chrome Web Store review decision for 0.2.1**. When approved/published, verify production appearance/theme changes and reminder capture against Doit Then v1.0.26. No new extension change is authorized here.
-- **Authority:** repository/source and actual Chrome Web Store dashboard first, this CURRENT section second. Older dated `current`, `next task`, `publication state`, `0.1.x` and packaging instructions below are **historical snapshots** where superseded. Preserve debugging detail but never downgrade the source version or submit the obsolete 0.1.19 ZIP.
-- Only the handoff is changed by this documentation update; fetch updated `main` before editing the local checkout. No GitHub Actions run automatically.
+Validated development branch:
+`vibe/chrome-manifest-shortcut-023`
 
-## Chrome extension 0.2.1 submitted - 2026-10-18
+Validated source commit:
+`cb34cb7dfba587a8db8f43c383c110e90efbcf64`
 
-- Chrome Web Store version 0.2.1 was submitted by the user.
-- User confirmed local package preparation succeeded.
-- Submitted package contained the dynamic theme implementation.
-- Four icons from installed extension 0.2 were preserved.
-- Installed 0.2 runtime was checked against the original baseline.
-- Source icons were restored from the same installed 0.2 files
-  used to prepare the submitted package.
-- Local extension regression tests passed.
-- The submitted ZIP was subsequently unavailable at its
-  original Downloads path; its original SHA-256 is unverified.
-- Chrome Web Store approval/publication remains unverified.
-- Companion Doit Then 1.0.26 build 40 is published.
-- GitHub Actions remain manual-only.
+At this checkpoint:
+- Development branch contains extension 0.2.3.
+- `main` remains at extension 0.2.2.
+- A documentation-only commit may advance development HEAD.
+- Verify GitHub state before any future development.
 
-## Historical 0.1.19 package (not submitted; superseded by 0.2.1)
+Primary local checkout:
+`~/Documents/Vibe Coding/AddToReminders`
 
-- Version: 0.1.19.
-- User confirmed the dynamic theme functionality: PASS.
-- Package: `~/Downloads/Add-to-Reminders-0.1.19-Chrome-Web-Store.zip`.
-- ZIP SHA-256: `c481192c8fb91b329de84cf726a697c116300dc44cb6d6c2f43f7ff6bf3a447d`.
-- Extension tests and ZIP integrity verified locally.
-- Production and development extension host identities remain separate.
-- Companion Doit Then v1.0.26 release commit: `bbbf04dc4bd0a2cb59560619a58158b34d19e40e`.
-- Manifest key excluded from Chrome Web Store upload ZIP.
-- This 0.1.19 package was **not submitted**; the user submitted the subsequent 0.2.1 package for review.
-- GitHub Actions remain manual-only.
+Validated development worktree:
+`~/Desktop/tmp/Add-to-Reminders-shortcut-023`
 
+The original checkout previously had an unrelated manifest
+modification. Its current status remains unverified.
+Never automatically reset, stash, or overwrite it.
 
-## 2026-10-18 validated dynamic Doit Then palettes
+## Current Version and Distribution
 
-- Branch: `vibe/dynamic-chrome-palettes`.
-- Starting source commit: `580ab369e63e8278e7ec5e22854f09e7f971593b`.
-- Exact validated extension checkout: `/Users/alex/Desktop/tmp/DoitThen-dynamic-theme.4d80zR/Add-to-Reminders`.
-- Companion app checkout: `/Users/alex/Desktop/tmp/DoitThen-dynamic-theme.4d80zR/DoitThen`.
-- User explicitly confirmed local validation: PASS.
-- Extension Node regression tests passed.
-- Tested with the locally built Doit Then development app.
+Chrome extension source version: **0.2.3**
 
-### Implementation
+Manifest: Chrome Manifest V3
 
-- `chrome-extension/extension-theme.js` accepts validated HEX
-  palettes supplied by Doit Then.
-- The existing native `themeInfo` schema remains version 1.
-- Older Doit Then apps continue using the existing bundled
-  named palettes.
-- Without a connected app, the extension uses built-in
-  Paper Ember in light appearance and Carbon Ember in dark.
-- `popup.html` uses those fallback colors from initial rendering,
-  replacing the generic blue appearance.
-- Theme tests cover dynamic colors, legacy compatibility,
-  unsafe CSS rejection, and standalone fallback.
-- Reminder capture and other extension functionality are preserved.
-- Development and production native-host identities remain separate.
+Production Chrome Web Store extension ID:
+`nofdmceaajfglgpldmibhggabdjgbgnf`
 
-### Historical pre-release status (superseded)
+Development extension ID:
+`fdkkbdcnkigfhiabomhklbfapojbpdol`
 
-- Local development validation was PASS.
-- Subsequently, Doit Then v1.0.26/build 40 was published, and Chrome extension 0.2.1 was submitted for review; its store approval/publication is unverified.
-- GitHub Actions remain manual-only.
+Final validated package:
+`~/Downloads/Add-to-Reminders-0.2.3-Chrome-Web-Store-FINAL.zip`
 
-# VIBECODING_HANDOFF.md
+SHA-256:
+`d10894fa6902dd51ecf588a165037c4624d48ee794ad1d4e3ef638d1519a42a6`
 
-## Publish/release command - standing authorization (2026-10-13)
+Package contents were verified against the committed source.
+The development manifest key is excluded from the package.
 
-- When the user says "publish", "release", "make update", or equivalent, treat that statement as standing authorization to complete the full validated local release and publication workflow. Do not ask for additional publication consent or confirmation.
-- Never create Terminal scripts that ask the user to type "PASS", "YES", or another validation or confirmation keyword before publishing. Never introduce case-sensitive validation gates. A user statement such as "pass", "passed", "works", or equivalent is an explicit confirmation of the corresponding manual tests, regardless of capitalization.
-- If the exact source change has already passed required local build/tests and the user confirmed required manual verification, proceed immediately with committing the exact tested source, handoff update, release build/signing/packaging, GitHub releases, Sparkle appcast publication, and live verification. Do not ask the user to repeat validation.
-- Keep the non-negotiable local validation gate: do not publish unvalidated executable/build-affecting changes. If required validation genuinely has not happened, stop and explain that blocker, with the minimum required local test instructions; do not pretend validation passed.
-- Stop only for real blockers such as missing local validation, failed build/test, unsafe working tree, missing signing credentials, or a failed release step. Do not create arbitrary pauses, keyword prompts, or extra approvals. Do not run GitHub Actions automatically.
-- If local Mac access is unavailable, supply one copy-pasteable, **noninteractive** Terminal block to carry out already-authorized release actions in the exact validated Mac checkout. Use existing credentials/keychain without inventing confirmation prompts. If genuine credentials or macOS prompts are unavoidable, report them as blockers, not additional publication-approval requests.
-- This rule takes precedence over older handoff wording that might suggest an additional user confirmation after validation. It does not override mandatory validation or source-of-truth checks.
+Chrome Web Store submission and approval of version 0.2.3
+remain unverified.
 
+The separate native helper's latest verified GitHub release
+is **v0.1.4**, containing `AddToRemindersHelper-0.1.4.pkg`.
 
-## Shared Vibe Coding workflow rules (2026-10-08)
-
-### Documentation-only handoff exception
-- When the user explicitly requests a documentation-only update, ChatGPT may edit the existing root `VIBECODING_HANDOFF.md` directly through GitHub without requiring a Mac build or a local checkout step.
-- First inspect the actual repository, target branch, and existing handoff. Change only the handoff, preserve historical project context, and verify the resulting GitHub file and commit. Do not use this exception for application code, tests, scripts, configuration, workflows, version/build changes, release assets, or other build-affecting files.
-- Before the next local development change, fetch the remote branch and reconcile the updated handoff with the local checkout. Never overwrite or silently reset unrelated local changes.
-- The normal rule remains: validate the exact executable/build-affecting changes in the real Mac checkout before committing or pushing those changes. Include a current handoff with every meaningful validated development commit.
-
-### Temporary worktrees, releases, and logs
-- Create temporary Git worktrees under `/Users/alex/Desktop/tmp/<project>-...` using a project-specific name.
-- Put release working folders, temporary release artifacts, staging directories, and build/release logs under `/Users/alex/Desktop/tmp/<project>-release-...`.
-- Do not create disposable worktrees inside `/Users/alex/Documents/Vibe Coding`.
-- Do not place release artifacts or logs directly on the Desktop root.
-- After a successful verified release, remove temporary worktrees and temporary release artifacts when safe. Do not remove active worktrees, uncommitted work, published assets, or permanent project files.
-- Retain failure logs only when useful for debugging; remove unnecessary temporary logs.
-- These instructions govern future operations and take precedence over historical temporary-path examples elsewhere in this handoff.
-
-### Low-overhead development defaults
-- Use ChatGPT plus GitHub inspection and Mac-local Terminal scripts by default; do not use Codex, ChatGPT Work, separately billed API agents, or GitHub Actions runners unless explicitly requested.
-- Prefer existing project scripts. Give one local command block to apply, build, test, and launch an executable change, then a separate commit/push block only after required validation is confirmed.
-- Documentation-only updates under the exception above do not require a rebuild.
-
-## Project
-
-**Name:** Add to Reminders
-
-**Purpose:** macOS-only Chrome extension for fast Todoist-style capture into Apple Reminders.
-
-Product philosophy:
-
-> Open -> type/edit -> Enter -> gone.
-
-This is intentionally a capture utility, not a full Apple Reminders client.
-
-The project has two components in this repository:
-
-1. Chrome extension
-2. Native macOS helper connected through Chrome Native Messaging
-
-A separate native QuickAdd app exists in another repository and must not be mixed into this repo.
-
-## Repository and local paths
-
-- GitHub: `TheCuriousProcrastinator/Add-to-Reminders`
-- Repository visibility: public
-- Default branch: `main`
-- Current active branch at handoff creation: `main`
-- Only branch present in GitHub at handoff creation: `main`
-- Code HEAD before this handoff-only commit: `652b277116c1e18796169f5b86784bf5c5355511`
-- Latest code commit before handoff: `Add capture settings and expanded date language`
-- Local project path: `/Users/alex/Documents/Vibe Coding/AddToReminders`
-- Chrome extension path: `/Users/alex/Documents/Vibe Coding/AddToReminders/chrome-extension`
-- Native helper path: `/Users/alex/Documents/Vibe Coding/AddToReminders/mac-helper`
-- Package builder: `/Users/alex/Documents/Vibe Coding/AddToReminders/build-pkg.command`
-- Local distribution directory: `/Users/alex/Documents/Vibe Coding/AddToReminders/dist`
-
-Because this file is committed after the code HEAD above, always verify the actual current GitHub HEAD before changing anything.
-
-## Current version and release state (verified 2026-10-18)
-
-### Chrome extension source and distribution
-
-- `main` manifest version: **0.2.1**, Manifest V3; `Add Website to Reminders` listing name, `Add to Reminders` action.
-- Popup: `popup.html`; options: `options.html`; keyboard shortcut: `Alt+Shift+R` on macOS.
-- Manifest permissions: `activeTab`, `storage`, `nativeMessaging`, `contextMenus`; no host permissions.
-- Source manifest intentionally includes a development `key`; Web Store ZIP omits the copied `key` without changing other manifest permissions.
-- The user reported Chrome Web Store version **0.2** and submitted **0.2.1** for review. Approval/publication of 0.2.1 is **not verified**. Check the Chrome Web Store dashboard, not GitHub, for review state.
-
-### Separate native helper release
-
-Latest verified GitHub Release: **v0.1.4**, `AddToRemindersHelper-0.1.4.pkg`, SHA-256 `43aa22cdb6ad26b103024c4a9eeb21a81db7c9ebcd92bdb2d4037d454eb8a524`; macOS 14+, Universal 2, ad-hoc signed. Supports Chrome and Chrome for Testing. The production app's native messaging host is preferred.
-
-### Historical store context
-
-Chrome Web Store 0.1.5 approval was recorded for 2026-08-31, and 0.1.17 publication was confirmed on 2026-10-03. Those are historical milestones, **not** the current version. The later installed production version was 0.2; the present submission is 0.2.1.
-
-## Separate QuickAdd project
-
-Do not mix the standalone QuickAdd app into this repository.
-
-Separate local path:
-
-`/Users/alex/Documents/Vibe Coding/QuickAdd`
-
-Separate GitHub repository:
-
-`TheCuriousProcrastinator/QuickAdd-for-Reminders`
-
-The Chrome extension parser has intentionally borrowed/paralleled some QuickAdd parsing behavior, but the apps remain separate projects.
+The helper version and Chrome extension version are independent.
 
 ## Architecture
 
-### Chrome extension
+The repository contains:
+- Chrome Manifest V3 extension
+- Native macOS helper
+- Package builder
+- Local regression tests
 
-Current runtime source files in GitHub:
-
+Important extension files:
 - `chrome-extension/manifest.json`
 - `chrome-extension/popup.html`
 - `chrome-extension/popup.js`
+- `chrome-extension/theme-boot.js`
+- `chrome-extension/extension-theme.js`
+- `chrome-extension/native-bridge.js`
 - `chrome-extension/background.js`
+- `chrome-extension/options.html`
+- `chrome-extension/options.js`
 - `chrome-extension/date-parser.js`
 - `chrome-extension/project-parser.js`
 - `chrome-extension/priority-parser.js`
-- `chrome-extension/options.html`
-- `chrome-extension/options.js`
-- `chrome-extension/native-bridge.js`
-- `chrome-extension/extension-theme.js`
-- `chrome-extension/test-date-parser.mjs`
-- `chrome-extension/test-native-bridge.mjs`
-- `chrome-extension/test-extension-theme.mjs`
 - `chrome-extension/icons/`
 
-The extension prefers Chrome Native Messaging host:
-
-`com.thecuriousprocrastinator.doitthen.chrome`
-
-and falls back to the standalone helper host:
-
-`com.alex.addtoreminders`
-
-Fallback occurs only when the preferred Doit Then host is genuinely
-unavailable. A real permission, validation, or save error from Doit Then is
-surfaced rather than silently falling back.
-
-### Native helper
-
-Relevant files:
-
+Native helper files:
 - `mac-helper/main.swift`
 - `mac-helper/RichLink.m`
 - `mac-helper/RichLinkBridge.h`
-- `mac-helper/Info.plist`
 - `build-pkg.command`
 
-The helper uses:
+The helper uses EventKit to create reminders and a limited
+ReminderKit bridge to attach native rich webpage URLs.
 
-- EventKit for Apple Reminders access and reminder creation
-- a small private ReminderKit bridge only for attaching the native rich URL/source link
-- Chrome Native Messaging over stdin/stdout
+Do not replace this with direct Reminders SQLite access,
+Full Disk Access, or wholesale private ReminderKit creation.
 
-Do not casually replace this hybrid architecture.
+## Native Messaging
 
-Historical failed/rejected approaches that should not be revived without a strong reason:
+Production Do It Then host:
+`com.thecuriousprocrastinator.doitthen.chrome`
 
-- Full Disk Access
-- direct Reminders SQLite access
-- full private ReminderKit reminder creation
-- tags
-- image attachments
+Development Do It Then host:
+`com.thecuriousprocrastinator.doitthen.chrome.dev`
 
-## Native helper design
+Standalone fallback helper:
+`com.alex.addtoreminders`
 
-Verified current helper behavior includes:
+The extension selects the host according to extension ID.
 
-- request full Reminders access through EventKit
-- enumerate reminder lists
-- create reminder lists
-- parse date/time payloads
-- construct EventKit recurrence rules
-- create reminders from Native Messaging requests
-- use `RichLink.m` to locate the EventKit-created reminder through ReminderKit and attach a native URL attachment
+Fallback occurs only when the preferred host is unavailable.
+Real permission, validation, or save errors must be surfaced.
 
-`RichLink.m` dynamically loads:
+The extension also sends a lightweight native messaging
+check-in to Do It Then.
 
-`/System/Library/PrivateFrameworks/ReminderKit.framework/ReminderKit`
+Do not replace availability detection with Chrome profile
+or extension-folder inspection.
 
-It finds the created reminder by its calendar identifier, updates it through `REMSaveRequest`, and adds a URL attachment.
+## Theme Synchronization
 
-This private-framework bridge is deliberate and should be handled carefully.
+The Chrome extension follows Do It Then's selected appearance
+and light/dark theme.
 
-## Helper packaging
+Relevant companion application files:
+- `DoItThen/Core/Theme/DoItThenTheme.swift`
+- `DoItThen/Core/Theme/ChromeThemeBridgeState.swift`
+- `ChromeHost/main.swift`
 
-`build-pkg.command` currently:
+Chrome components:
+- `native-bridge.js` requests themeInfo.
+- `extension-theme.js` validates and applies palette values.
+- `theme-boot.js` initializes cached theme colors.
+- `popup.html` uses CSS theme variables.
 
-- reads the package version from `chrome-extension/manifest.json`
-- builds arm64 helper
-- builds x86_64 helper
-- creates a Universal 2 binary with `lipo`
-- targets macOS 14
-- creates `AddToRemindersHost.app`
-- ad-hoc signs the app
-- creates Native Messaging manifests for:
-  - `/Library/Google/Chrome/NativeMessagingHosts/`
-  - `/Library/Google/ChromeForTesting/NativeMessagingHosts/`
-- packages output into `dist/AddToRemindersHelper-<version>.pkg`
-- removes metadata junk before packaging
+Native theme schema version: 1.
 
-Production Chrome extension origin currently allowed by the packaged Native Messaging manifest:
+The extension supports the app's dynamic color palettes,
+with built-in standalone themes when Do It Then is unavailable.
 
-`chrome-extension://nofdmceaajfglgpldmibhggabdjgbgnf/`
+Paper Ember reference:
+- Primary accent: `#C64F1A`
+- Strong accent: `#AC4111`
+- Primary action fill: `#C64F1A`
 
-## Chrome extension IDs
+The Chrome Add Reminder button uses `var(--accent)`.
+It must not permanently use `var(--accent-hover)`.
 
-Historical handoff values, consistent with current packaging/source:
+Button styling:
+- Solid theme color
+- No gradient
+- No glossy shadow
+- Subtle brightness change on hover
 
-Development unpacked extension ID:
+The user visually compared Chrome and Quick Add in 0.2.3.
+Their button colors matched in the supplied screenshot.
 
-`fdkkbdcnkigfhiabomhklbfapojbpdol`
+Not every light/dark theme combination was separately
+reconfirmed after the final styling change.
 
-Chrome Web Store production ID:
-
-`nofdmceaajfglgpldmibhggabdjgbgnf`
-
-Important:
-
-- the working development `manifest.json` intentionally contains a `"key"`
-- do not remove that key from source
-- remove it only from a copied production manifest when building a Web Store package
+The extension's older standalone fallback colors may differ
+from the current application palette. This is a potential
+future alignment task, not a confirmed live sync failure.
 
 ## Popup UX
 
-The current popup is intentionally compact and should not be broadly redesigned unless requested.
-
-Current intended layout and behavior:
-
-- about 360px wide
-- dark/light aware
-- compact macOS-inspired visual density
-- app icon + Add to Reminders header
-- Settings gear
-- title field
-- site/domain
+Preserve the compact capture interface:
+- Page title and website
 - List
 - Date
 - Priority
 - Notes
-- Add Reminder CTA
+- Add Reminder
+- Settings
 
-Title behavior is intentional:
+Title initialization:
+- Insert webpage title.
+- Append exactly one trailing space.
+- Position caret after the space.
+- Do not select all automatically.
 
-- webpage title is inserted automatically
-- exactly one trailing space is appended
-- caret is placed after that space
-- title is not select-all highlighted
+Keyboard behavior:
+- Title Enter submits unless suggestions are active.
+- Notes Enter inserts a newline.
+- Notes Command+Enter submits.
+- Arrow keys navigate list suggestions.
+- Escape dismisses suggestions before closing the popup.
 
-Do not restore select-all behavior.
-
-## Keyboard behavior
-
-Current intended behavior:
-
-- Title Enter submits reminder unless `/List` suggestions are active
-- Notes Enter inserts newline
-- Notes Command+Enter submits
-- `/List` suggestions use Arrow Up/Down and Enter
-- Escape closes `/List` suggestions first
-- Escape again closes the popup
-
-## Capture settings
-
-Verified current code contains capture settings in `popup.js` and `options.js`.
-
-Current defaults:
-
-- Default list: `Last used`
-- Default date: `No date`
-- Default priority: `None`
+Default capture settings:
+- List: Last used
+- Date: No date
+- Priority: None
 - Smart date recognition: On
 
 Settings auto-save.
 
-List ordering rule:
+Typed smart commands override defaults temporarily.
+Removing a token restores the prior/default value.
 
-1. `Last used`
-2. `Inbox`
-3. other Apple Reminders lists alphabetically
+## Smart Parsing
 
-Typed smart commands override defaults while present. Removing those tokens restores the prior/default values.
-
-Example:
-
-Defaults:
-- Inbox
-- Today
-- Medium
-
-Typing:
-
-`tomorrow p1 /Errands`
-
-should resolve to:
-
-- Tomorrow
-- High
-- Errands
-
-Deleting the tokens should restore:
-
-- Today
-- Medium
-- Inbox
-
-This restoration behavior is important.
-
-## Smart list parsing
-
-Parser:
-
-`chrome-extension/project-parser.js`
-
-Supported examples include:
-
-- `/Work`
-- `/Errands`
-- `/Personal`
-
-Expected behavior:
-
-- matches real Apple Reminders lists
-- suggestions prioritize starts-with then contains
-- maximum 7 suggestions
-- smart list token is highlighted
-- token is removed before save
-- smart list overrides current/default list while present
-- deleting token restores prior/default list
-
-## Priority parsing
-
-Parser:
-
-`chrome-extension/priority-parser.js`
-
-Mappings:
-
-- `p1` -> High -> EventKit value 1
-- `p2` -> Medium -> EventKit value 5
-- `p3` -> Low -> EventKit value 9
-- `p4` -> None -> EventKit value 0
-
-Typed priority overrides the default while present. Removing it restores the previous/default priority.
-
-## Natural-language date parser
-
-Main file:
-
-`chrome-extension/date-parser.js`
-
-The parser is deliberately more than a single-match regex. Preserve its multi-token architecture.
-
-Important current capabilities from source and prior verified work include:
-
-### Basic dates
-
-- today / tod
-- tomorrow / tom / tmr
-- tonight
-- weekday names
-- next weekday
-- weekend / this weekend / next weekend
-- next week
-- next month
-- next year
-
-Short aliases are deliberately conservative.
-
-Example:
-
-`Meet Tom Hanks`
-
-must not interpret `Tom` as tomorrow.
-
-### Relative dates
-
-- in 20 minutes
-- in N hours
-- in N days
-- in a week
-- in N weeks
-- in a month
-- in N months
-- optional explicit times
-
-Month arithmetic clamps to valid dates.
-
-### Times
-
-- noon
-- 4pm
-- 4:30pm
-- 16:00
-- 1600
-
-Bare time rolls to tomorrow if already passed. Explicit date + time should not silently roll the date.
-
-### Dayparts
-
-Source marker: `TODOIST_DATE_LANGUAGE_V014`
-
-Current dayparts include:
-
-- morning -> 09:00
-- afternoon -> 12:00
-- evening -> 19:00
-- night -> 22:00
-
-Examples:
-
-- `tom morning`
-- `tom afternoon`
-- `tom evening`
-- `tom night`
-- `in the morning`
-- `in the afternoon`
-- `in the evening`
-- `in the night`
-
-### Named dates
-
-Examples:
-
-- Jan 27
-- January 27
-- 27 Jan
-- 27 January
-- Jan 27 2027
-- January 27, 2027
-- 27 Jan 2027
-- 27 January 2027
-
-Impossible dates must be rejected.
-
-### Additional date language
-
-Supported/intended behavior includes:
-
-- ordinal day of month such as `27th`
-- `mid January`
-- `end of month`
-- plus-relative forms such as `+3 weeks`
-- arithmetic such as `6 weeks before 21 Jul`
-- ordinal weekday of month such as `3rd Friday of September`
-- `last Friday of November`
-- explicit `no date` and `no due date`
-
-Do not add ambiguous numeric date forms such as `27/1` unless explicitly requested.
-
-## Recurrence
-
-Current parser supports a broad recurrence grammar.
-
-Examples include:
-
-- every weekday
-- every workday
-- every weekend
-- every mon, fri
-- ev mon, wed, fri 3pm
-- every Monday
-- every Fri at 16:00
-- every other Monday
-- every 3rd Friday
-- every last Friday
-- every 3 days
-- every 2 weeks
-- every 4 months
-- every 2 years
-- every other day/week/month/year
-- daily
-- weekly
-- monthly
-- yearly
-- quarterly
-- every quarter
-- every 27th
-
-`ev` is a supported shorthand for `every`.
-
-Explicitly deferred:
-
-`every! 3 days`
-
-Completion-relative recurrence was intentionally not implemented.
-
-## Multi-token parsing
-
-Preserve this architecture.
-
-Current popup parsing supports:
-
-- separate date and time smart tokens
-- token ranges
-- smart highlighting
-- click-to-reject recognized date tokens
-- rejected-token range shifting as title text changes
-- stronger date phrase winning over ambiguous aliases
-- smart token removal before save
-- rejected tokens remaining literal
-
-Do not replace this with a simplistic parser without understanding these behaviors.
-
-## Explicit no-date syntax
-
-Supported:
-
-- `no date`
-- `no due date`
-
-This exists because Settings can define a default date.
-
-If the default is Today:
-
-- typing `no date` must switch to No date
-- deleting the token must restore Today
-- an independent time token must not create a due date while `no due date` is active
-
-## Packaging rules
-
-Local `.gitignore` deliberately ignores:
-
-- `*.before-*` temporary backups
-- `dist/`
-- helper build products
-- separate QuickAdd project
-
-Do not package the entire local `chrome-extension` directory blindly.
-
-Historical packaging bugs already encountered:
-
-- backup `.before-*` files accidentally entered a ZIP
-- a clean ZIP accidentally omitted `project-parser.js`
-
-Production Web Store packages must be built from an explicit runtime whitelist.
-
-Expected runtime whitelist:
-
-- `manifest.json`
-- `popup.html`
-- `popup.js`
-- `background.js`
+Main files:
 - `date-parser.js`
 - `project-parser.js`
 - `priority-parser.js`
-- `options.html`
-- `options.js`
-- `native-bridge.js`
-- `extension-theme.js`
-- `icons/icon16.png`
-- `icons/icon32.png`
-- `icons/icon48.png`
-- `icons/icon128.png`
-- `icons/icon512.png`
 
-Before packaging:
+Priority shorthand:
+- p1: High, EventKit 1
+- p2: Medium, EventKit 5
+- p3: Low, EventKit 9
+- p4: None, EventKit 0
+
+List examples:
+`/Work`, `/Errands`, `/Personal`
+
+List suggestions prioritize prefix matches, then contains
+matches, and show up to seven suggestions.
+
+Date parsing includes:
+- Today, tomorrow and weekday names
+- Weekends, next week/month/year
+- Relative minutes, hours, days, weeks and months
+- Named dates, ordinals and month positions
+- Explicit and natural-language times
+- Morning, afternoon, evening and night
+- Relative date arithmetic
+- Explicit `no date` / `no due date`
+- Recurrence expressions
+
+Dayparts:
+- Morning 09:00
+- Afternoon 12:00
+- Evening 19:00
+- Night 22:00
+
+Recurrence includes:
+- Every weekday
+- Selected weekdays
+- Every other Monday
+- Every N days/weeks/months/years
+- Daily, weekly, monthly, quarterly and yearly
+
+Preserve multi-token parsing, highlighting, click-to-reject,
+rejected-token range tracking, and default restoration.
+
+`Meet Tom Hanks` must not interpret Tom as tomorrow.
+
+Do not introduce ambiguous numeric dates or completion-relative
+`every!` recurrence without a new decision.
+
+## Version 0.2.3 Changes
+
+Chrome Web Store violation:
+Yellow Magnesium, minimum functionality.
+
+Reported cause:
+Missing default keyboard shortcut key specification.
+
+Fix:
+- Added `default: Alt+Shift+R`.
+- Preserved `mac: Alt+Shift+R`.
+- Kept extension permissions unchanged.
+
+Popup fixes:
+- Restored the missing `theme-boot.js`.
+- Fixed the blank popup caused by its absence.
+- Removed the reversed-gradient button hover.
+- Replaced the wrong strong-accent button fill with
+  the primary theme accent.
+
+Tests:
+- JavaScript syntax checks passed.
+- Date parser regression tests passed.
+- Native bridge tests passed.
+- Theme mapping tests passed.
+- Chrome package dependency checks passed.
+- Package contents matched the validated source.
+
+Manual evidence:
+- User confirmed initial shortcut validation passed.
+- User showed the corrected, visible popup.
+- User confirmed visual button color alignment.
+- User requested commit and packaging.
+
+Not separately reconfirmed after the final styling patch:
+- Full end-to-end reminder save
+- All available theme combinations
+- Production Chrome Web Store behavior
+
+Do not overstate validation.
+
+## Important Historical Findings
+
+- Earlier packages accidentally included backup files.
+- An earlier clean package omitted `project-parser.js`.
+- Version 0.2.3 initially missed `theme-boot.js`, causing
+  a completely blank popup.
+- Every package must include its runtime dependencies.
+- The source manifest retains the development extension key.
+- Web Store packages must remove that key.
+- Production and development native hosts remain isolated.
+- The installed Chrome 0.2.2 runtime was reconciled into GitHub
+  on 2026-10-19.
+- Chrome Web Store 0.2.1 was previously submitted.
+  Its final review result was not verified here.
+- Earlier 0.1.x history remains available through Git.
+
+## Build and Validation
+
+Normal validation is local on the user's actual Mac.
+
+Regression tests:
+- `chrome-extension/test-date-parser.mjs`
+- `chrome-extension/test-native-bridge.mjs`
+- `chrome-extension/test-extension-theme.mjs`
 
-- run `git diff --check`
-- syntax-check JavaScript
-- run parser regressions
-- verify all imported local JS modules exist in package
-- copy manifest and remove only the packaged `"key"`
-- verify the exact whitelist
-- Place the final review ZIP in a persistent, verified location (historically `dist/`; the 0.2.1 submission used Downloads). Verify its continued existence if a later step needs the exact bytes.
+Check JavaScript syntax and `git diff --check`.
 
-Do not use `/tmp` as the final Web Store artifact location.
+Packaging requirements:
+- Use an explicit runtime file list.
+- Include all referenced scripts and imported local modules.
+- Include required icons.
+- Exclude tests, backups and temporary artifacts.
+- Remove the development manifest key from the ZIP only.
+- Confirm package contents against validated source.
+- Verify final ZIP integrity and SHA-256.
 
-Historical naming convention:
+Increment the extension version for future executable changes.
 
-`AddToReminders-<version>-webstore.zip`
+Manual regression:
+- Popup opens normally.
+- Keyboard shortcut opens the popup.
+- List/date/priority defaults restore correctly.
+- Smart date recognition toggle works.
+- `tomorrow p1 /Errands` resolves correctly.
+- Explicit `no date` overrides a default Today.
+- Reminder creation saves the intended fields.
+- Native rich webpage URL is attached.
+- Theme synchronization matches Do It Then.
+- Production and development hosts remain isolated.
 
-The submitted 0.2.1 package used `Add-to-Reminders-0.2.1-Chrome-Web-Store.zip` in Downloads. Naming alone does not verify package contents or continued availability.
+The helper's Universal 2 package is built with
+`build-pkg.command` when helper changes require it.
 
-## Versioning rule
+## Deferred Features
 
-**Every development change/test build must bump the Chrome extension version.**
+Do not add without an explicit user decision:
+- Full Reminders client
+- Tags, image attachments or OCR
+- AI scanning
+- Assignees or duration
+- Hourly recurrence
+- Completion-relative recurrence
+- Extra Chrome permissions
+- Direct Reminders database access
 
-This includes:
+Potential future features:
+- Instant capture
+- Reminder alarm syntax
+- Recurrence ending constraints
+- Multi-reminder paste
 
-- UI changes
-- parser changes
-- keyboard changes
-- Settings changes
-- small bug fixes
+## Separate QuickAdd Project
 
-Do not leave changed extension code on the same manifest version.
+Standalone QuickAdd is not part of this repository.
 
-A documentation-only handoff commit does not require an extension version bump.
+GitHub:
+`TheCuriousProcrastinator/QuickAdd-for-Reminders`
 
-## Validation
+Local path:
+`~/Documents/Vibe Coding/QuickAdd`
 
-Normal development and release validation is authoritative only when performed locally on the user's Mac.
+The Do It Then app is another separate repository.
 
-The repository contains `.github/workflows/manual-validation.yml`.
+## Development Rules
 
-That workflow is intentionally manual-only through `workflow_dispatch` and exists only for optional clean-environment verification when the user explicitly requests it.
+Before modifying a local checkout:
+1. Fetch origin.
+2. Verify branch and expected HEAD.
+3. Inspect `git status --short`.
+4. Stop if unrelated changes exist.
+5. Inspect implementation before editing.
 
-GitHub Actions must not run automatically for feature-branch pushes, `main` pushes, pull requests, release/version tags, schedules, or other repository events.
+Do not automatically reset, stash, merge or overwrite changes.
 
-Development and releases do not depend on GitHub Actions.
+For executable changes:
+- Use the smallest reliable patch.
+- Test the exact files on the user's Mac.
+- Require explicit manual confirmation for UI behavior.
+- Update this handoff.
+- Commit only validated files.
+- Push the correct branch.
+- Verify remote HEAD.
 
-Current lightweight parser script:
+GitHub Actions policy:
+- Manual `workflow_dispatch` only.
+- Never run automatically for pushes, PRs or tags.
+- Do not use Actions for normal development validation.
 
-`chrome-extension/test-date-parser.mjs`
+The tracked `.githooks/pre-commit` invokes
+`Tools/vibe_handoff.py sync-staged`.
 
-Run from the Chrome extension directory with Node.
+It updates the generated current-state section.
+It does not replace the manually maintained handoff narrative.
 
-Recommended baseline checks before a code commit:
+Documentation-only handoff changes do not require rebuilding.
 
-```bash
-git diff --check
-node --check chrome-extension/background.js
-node --check chrome-extension/popup.js
-node --check chrome-extension/options.js
-node --check chrome-extension/date-parser.js
-node --check chrome-extension/project-parser.js
-node --check chrome-extension/priority-parser.js
-node chrome-extension/test-date-parser.mjs
-```
+Temporary worktrees and build artifacts belong under
+`~/Desktop/tmp/`.
 
-For helper changes, also build/package with `build-pkg.command` and verify the generated Universal 2 package.
+Do not remove an active development worktree or Chrome profile.
 
-## Critical regression checks before a store release
+## Current Open Items
 
-### Defaults and restoration
+1. Verify whether 0.2.3 was submitted to Chrome Web Store.
+2. Verify approval/publication when Google completes review.
+3. Test production reminder creation and theme synchronization.
+4. Reconcile the validated development branch with `main`
+   when authorized.
+5. Preserve unrelated local checkout modifications.
 
-Set:
+No new feature is authorized by this handoff alone.
 
-- Default List = Inbox
-- Default Date = Today
-- Default Priority = Medium
-
-Type:
-
-`tomorrow p1 /Errands`
-
-Expected:
-
-- Tomorrow
-- High
-- Errands
-
-Delete tokens one at a time and verify defaults restore.
-
-### No-date override
-
-With default Today:
-
-`no date`
-
-Expected: No date.
-
-Delete it: Today should restore.
-
-### Smart recognition toggle
-
-With Smart date recognition OFF, these remain literal:
-
-- tomorrow
-- Jan 27
-- 6pm
-- +3 weeks
-
-These still work:
-
-- p1
-- /Errands
-
-### Parser regression examples
-
-Existing behavior worth preserving:
-
-- tomorrow noon
-- noon tomorrow
-- Friday 3pm
-- next Monday
-- in 20 minutes
-- in a week at noon
-- every weekday at 9am
-- ev mon, wed, fri 3pm
-- every other Monday
-- every 3 days
-- quarterly
-- every 27th
-- Meet Tom Hanks
-
-Newer date-language examples:
-
-- tom morning
-- tom afternoon
-- tom evening
-- tom night
-- next year
-- Jan 27
-- 27 Jan
-- 27th
-- mid January
-- end of month
-- +3 weeks
-- no date
-- 6 weeks before 21 Jul
-- 28 days after 21 July
-
-### Actual Apple Reminders output
-
-Verify end-to-end on macOS:
-
-- smart tokens stripped from title
-- native rich URL attached
-- correct list
-- correct due date/time
-- correct recurrence
-- correct priority
-- notes preserved
-
-## Chrome Web Store history
-
-Historical handoff records:
-
-- version 0.1.3 was rejected for "Not providing promised functionality"
-- Chrome for Testing Native Messaging support was then added
-- helper v0.1.4 installs manifests for regular Chrome and Chrome for Testing
-- Chrome Web Store version 0.1.5 was approved on 2026-08-31
-
-For the **current** cycle, the user submitted **0.2.1** on 2026-10-18 after reporting production version **0.2**. Approval/publication of 0.2.1 remains unverified; check the store dashboard before taking further publication action.
-
-## Important UX and product decisions
-
-- Keep the app focused on fast capture.
-- Do not turn it into a full Reminders client.
-- Avoid new Chrome permissions unless clearly necessary.
-- Preserve the current compact popup unless redesign is explicitly requested.
-- Preserve automatic title insertion with one trailing space and caret at the end.
-- Preserve parser restoration behavior when smart tokens are removed.
-- Preserve multi-token parser architecture.
-- Keep QuickAdd separate.
-- Keep rich-link helper architecture unless there is a verified better path.
-
-## Features explicitly not wanted right now
-
-Do not add without an explicit new decision:
-
-- full Apple Reminders client/sidebar
-- attachments
-- OCR/image extraction
-- AI document scanning
-- assignees
-- duration fields
-- hourly recurrence
-- completion-relative `every!`
-- unnecessary permissions
-- Full Disk Access
-- direct Reminders SQLite access
-- tags
-
-## Potential future features
-
-Historical candidates only. Do not start automatically:
-
-1. Instant Capture / Quick Save without opening popup
-2. reminder alarm syntax such as `!30m before`
-3. recurrence `starting`, `until`, `for N`
-4. multi-reminder paste
-
-The user should choose the next feature after current state is verified.
-
-## Fixed / known historical bugs
-
-Fixed:
-
-- Chrome for Testing Native Messaging support
-- missing package dependency `project-parser.js`
-- package contamination by development backups
-- popup/Settings consistency work
-- parser parity and expanded date language
-- fixed/default capture settings and restoration behavior
-- QuickAdd removed from this repository into a separate repo
-
-Open/unverified:
-
-- Chrome Web Store 0.2.1 review outcome and publication status (check dashboard).
-- Submitted 0.2.1 ZIP was missing from Downloads during subsequent handoff/commit work; no current copy or SHA-256 has been verified.
-- Local working-tree cleanliness cannot be verified from GitHub; inspect before the next edit.
-- Optional GitHub Actions clean-environment validation was not run and is not required.
-
-## Exact next development task
-
-1. Wait for the **Chrome Web Store 0.2.1 review decision**. It has been submitted; approval and publication have **not** been verified.
-2. After publication, test production theme synchronization and reminder capture against **Doit Then v1.0.26/build 40**, preserving production/development native-host separation.
-3. Before any *new* development, fetch `origin`, verify the exact branch and HEAD against the source of truth, and inspect `git status --short`. Do not reset, stash, merge, or overwrite unrelated local changes.
-4. Begin new code work only when the user requests a specific change. Follow mandatory local build/tests and manual validation before commit or push.
-
-## Suggested read-only local state check
-
-```bash
-cd "/Users/alex/Documents/Vibe Coding/AddToReminders" || exit 1
-export GIT_PAGER=cat
-git fetch origin
-git status --short
-git branch --show-current
-git rev-parse HEAD
-git rev-parse origin/main
-python3 -c 'import json; print(json.load(open("chrome-extension/manifest.json"))["version"])'
-git --no-pager log -5 --oneline --decorate
-```
-
-Do not switch branches or pull automatically when unrelated local changes are present.
-
-## Handoff maintenance rule
-
-Every meaningful future development commit must update this file with enough context for a fresh ChatGPT session to continue without prior conversation context.
-
-Update this handoff whenever a commit changes:
-
-- feature behavior
-- bug behavior
-- architecture
-- important implementation decisions
-- version/build/release state
-- debugging findings
-- validation/test status
-- known issues
-- exact next task
-
-Keep it current-state focused rather than chronological.
-
-Documentation-only commits that do not affect development context do not need to change the product version.
-
-## Prompt for the next ChatGPT session
+## Prompt for the Next ChatGPT Session
 
 Read the full handoff first.
 
-Treat it as historical context, but verify the current GitHub repository, branch, HEAD, extension version, helper release state, and relevant source before making changes.
+Treat it as historical context, then independently verify
+repository, branches, HEAD, manifest version, source files,
+release state, and Chrome Web Store publication.
 
-Identify meaningful differences between the handoff and the current code.
+Do not guess about implementation details.
 
-Never guess about implementation details that can be inspected.
-
-Preserve existing working behavior and continue from the current verified state.
-
-
-<!-- VIBE-CI-POLICY-2026-09-30 -->
-## Local validation and GitHub Actions policy
-
-This section is authoritative and supersedes older CI wording elsewhere in this handoff.
-
-- Normal development is validated in the user's actual local checkout before any GitHub write.
-- Only the exact locally tested files may be committed and pushed.
-- GitHub Actions is not the routine development validation loop.
-- Ordinary feature-branch pushes, ordinary `main` pushes, and pull requests must not automatically trigger GitHub Actions.
-- If a GitHub Actions workflow exists, it may run only when explicitly started with `workflow_dispatch` or from a release/version tag such as `v1.0.2`.
-- Do not broaden automatic CI triggers without the user's explicit approval.
-- Use the project's existing local build/test process before committing. For Xcode projects, use `xcodebuild` unless the project specifies otherwise, and leave the freshly built development app running for manual testing when relevant.
-- UI, interaction, layout, animation, drag/drop, focus, persistence, timing, and similar behavior changes require explicit user confirmation after local testing.
-- A documentation-only handoff update does not require rebuilding.
-- Release requests still require the executable behavior to have passed the required local validation first. Once that has happened, do not ask for another manual PASS solely because the release version/build changed or because a final Release build was produced.
-
-### Release / publish authorization
-
-This section is authoritative and supersedes older release-confirmation wording elsewhere in this handoff.
-
-When the user says **release**, **publish**, **make update**, or equivalent, treat that as authorization to complete the full release workflow without an additional publication confirmation.
-
-After the underlying executable change has already passed required local validation, continue automatically through every applicable release step:
-
-- verify the current clean local checkout and release baseline
-- bump version/build as required
-- build and validate the final Release configuration
-- create the final package/ZIP and perform signing/package checks where applicable
-- commit and push the validated release changes
-- create and push the release/version tag
-- allow release-tag GitHub Actions validation to run when configured, and verify it succeeds
-- publish GitHub release(s) and downloadable assets
-- update the appcast/update feed or other upgrade metadata where applicable
-- verify the public release asset and live upgrade/update path
-- update this handoff to the final verified release state
-- launch or install the final released build when appropriate
-
-A version/build bump, packaging step, signing step, generated appcast/feed change, or final Release-configuration build does **not** by itself require another manual user approval if the executable behavior being released already passed local validation.
-
-Stop only for a genuine blocker, a failed validation that requires an executable behavior change, or an authorization/credential action that only the user can perform. If release preparation introduces a new executable or build-affecting behavior change beyond what was already validated, the local validation gate reopens before publication.
-
-
----
-
-## Local Mac + GitHub hosting policy - 2026-10-02
-
-The user's Mac is the authoritative development and release environment.
-
-GitHub is used for committed source/history, branches, tags, GitHub Releases and downloadable assets, and optional manually requested clean-environment verification.
-
-GitHub Actions policy:
-
-- no automatic runs on feature branches
-- no automatic runs on `main`
-- no automatic runs on pull requests
-- no automatic runs on release/version tags
-- no scheduled runs
-- only explicit `workflow_dispatch` runs are allowed
-- GitHub Actions is optional verification and is not part of the normal development or release loop
-
-The native helper package and Chrome Web Store artifacts continue to be built and verified locally. `build-pkg.command` remains the helper packaging path.
-
-GitHub does not back up signing identities, private keys, Keychain credentials, local secrets, ignored files, `dist/`, or uncommitted work.
-
-This policy migration changes only `.github/workflows/manual-validation.yml` and this handoff. It does not change extension source, helper source, manifest version, package output, or runtime behavior.
-
-
----
-
-<!-- chrome-extension-release-0.1.17 -->
-
-## Chrome extension 0.1.17 release source - 2026-10-03
-
-The exact locally validated Chrome extension from:
-
-- branch: `vibe/doitthen-native-bridge`
-- commit: `1937f211e483c05a5cc7a9f677c114bca3cc0aaf`
-
-was promoted unchanged into `main`.
-
-Version:
-
-`0.1.17`
-
-Validated production behavior:
-
-- prefers `com.thecuriousprocrastinator.doitthen.chrome`
-- falls back to `com.alex.addtoreminders` only when Doit Then is unavailable
-- does not mask real Doit Then permission/save/request errors
-- popup follows Doit Then theme
-- Settings follows Doit Then theme
-- falls back to System appearance when Doit Then is unavailable
-- real six-scenario host fallback matrix passed
-- reminder creation passed
-- list/date/priority parsing regressions passed
-
-Web Store artifact:
-
-`dist/AddToReminders-0.1.17-webstore.zip`
-
-The source manifest retains its development `key` for the stable unpacked
-extension ID. The Web Store ZIP removes only that copied `key`.
-
-Production Chrome Web Store ID:
-
-`nofdmceaajfglgpldmibhggabdjgbgnf`
-
-Chrome Web Store version 0.1.17 was uploaded to the existing production
-listing and the user confirmed the publication step passed.
-
-No additional Doit Then / Add to Reminders integration work is currently
-required.
-
-
----
-
-<!-- chrome-web-store-0.1.17-published -->
-
-## Chrome Web Store 0.1.17 publication complete - 2026-10-03
-
-The user confirmed the Chrome Web Store publication step passed for extension
-version **0.1.17**.
-
-Production extension ID:
-
-`nofdmceaajfglgpldmibhggabdjgbgnf`
-
-Final integration state:
-
-- Doit Then 1.0.4 build 18 published
-- Sparkle release/update feed verified
-- automatic Doit Then Native Messaging registration released
-- Add to Reminders 0.1.17 source on `main`
-- Chrome Web Store 0.1.17 publication completed
-- standalone Add to Reminders Helper remains supported as fallback
-
-No additional integration work is currently required.
-
----
-
-## Doit Then extension check-in - validated 2026-10-04
-
-Local validation: PASS.
-
-Development branch:
-
-`vibe/doitthen-extension-checkin`
-
-Validated base:
-
-`95621c175ef79a9c14dc89839bdac6db00e6a71e`
-
-Development extension version:
-
-`0.1.18`
-
-### Purpose
-
-The extension reports its presence to Doit Then through the existing Native Messaging connection.
-
-### Architecture
-
-The extension sends a lightweight `ping` containing its extension version.
-
-Doit Then records successful Native Messaging contact as the availability source of truth.
-
-Do not replace this with Chrome profile or extension-folder inspection.
-
-### Development host isolation
-
-Unpacked development extension ID:
-
-`fdkkbdcnkigfhiabomhklbfapojbpdol`
-
-Development host:
-
-`com.thecuriousprocrastinator.doitthen.chrome.dev`
-
-Production host:
-
-`com.thecuriousprocrastinator.doitthen.chrome`
-
-This prevents development Doit Then builds from overwriting production Native Messaging registration.
-
-### Validated behavior
-
-Manual validation passed for:
-
-- unpacked 0.1.18 extension connects to development Doit Then
-- Doit Then recognizes extension check-in
-- reminder creation still works
-- Doit Then theme sync still works
-- production and development Native Messaging hosts remain independent
-
-Automated syntax, Native Messaging bridge, and theme tests passed before manual validation.
-
-No GitHub Actions run is required for this development push.
-
-
-## Automatic handoff synchronization (2026-10-19)
-
-- The tracked `.githooks/pre-commit` runs `Tools/vibe_handoff.py sync-staged` locally. It reads version/build from the Git index, reads the GitHub published release, refreshes only the bounded generated current-state section and stages the handoff in the same commit. It does **not** modify application code or establish build/manual-test validation.
-- On a fresh Mac checkout, run `sh .githooks/install.sh` once. It refuses to replace an existing pre-commit hook. Do not bypass hooks with `--no-verify`. Changes to feature behavior, debugging decisions, known issues, manual validation, and next work still require a human-maintained narrative entry after the exact local test passes.
-- Do not commit or push any executable change before successful validation in the real Mac checkout. The tool makes documentation updates only; GitHub Actions remain manual only.
-- Sparkle applications' release scripts refresh generated release facts in source and update-feed handoffs once their respective release milestones are reached. Verify the live release/feed before claiming publication succeeded. Projects without a scripted release must refresh and commit the handoff after externally verifying publication.
-- If GitHub release status cannot be verified, or the handoff contains unstaged edits, the hook blocks rather than guessing or overwriting your changes.
+Preserve existing behavior, the local validation requirement,
+and manual-only GitHub Actions policy.
